@@ -191,8 +191,8 @@ void markAsPaid(vector<Customer>& customers) {
             cout << "\n\n" << counter << ". Name    : " << c.name;
             cout << "\n   Amount  : PHP " << fixed << setprecision(2) << c.loanAmount;
             cout << "\n   Due Date: " << setfill('0') << setw(2) << c.nextPaymentDate.day << "/"
-                 << setfill('0') << setw(2) << c.nextPaymentDate.month << "/"
-                 << c.nextPaymentDate.year;
+                    << setfill('0') << setw(2) << c.nextPaymentDate.month << "/"
+                    << c.nextPaymentDate.year;
             hasUnpaidLoans = true;
             counter++;
         }
@@ -247,10 +247,14 @@ void markAsPaid(vector<Customer>& customers) {
         cout << "\n----------------------------------------\n";
 
         printPrompt();
-        slowPrint("Are you sure you want to mark this loan as paid? (y/n): ");
+        slowPrint("Are you sure you want to mark this loan as paid? (Y/n): ");
         string confirm;
         getline(cin, confirm);
         
+        if (confirm.empty()) {
+            confirm = "y";
+        }
+
         if (confirm == "y" || confirm == "Y") {
             it->isPaid = true;
             printPrompt();
@@ -435,11 +439,15 @@ void applyForLoan(vector<Customer>& customers) {
 
     // Confirmation prompt
     printPrompt();
-    slowPrint("Do you want to proceed with the loan application? (y/n): ");
+    slowPrint("Do you want to proceed with the loan application? (Y/n): ");
     string confirm;
     getline(cin, confirm);
     transform(confirm.begin(), confirm.end(), confirm.begin(), ::tolower);
     
+    if (confirm.empty()) {
+        confirm = "y";
+    }
+
     if (confirm == "y" || confirm == "yes") {
         customers.push_back(c);
         saveCustomers(customers);
