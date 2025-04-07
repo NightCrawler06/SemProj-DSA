@@ -1,7 +1,6 @@
 ---
 title: Budget and Finance
 ---
-
 # Introduction
 
 This document will walk you through the "Budget and Finance" code. The purpose of this code is to help users track their income, expenses, savings, and provide a financial summary.
@@ -185,16 +184,16 @@ void trackUserExpenses(User &user) {
 
     // para sa Savings, Debt, and Investments
     cout << "\n-------------------- Savings, Debt, and Investments --------------------\n";
-
+    
     cout << "Enter total savings for the month: PHP ";
     user.totalSavings = getValidNumberInput();
-
+    
     cout << "Enter total debt for the month: PHP ";
     user.totalDebt = getValidNumberInput();
-
+    
     cout << "Enter total investments for the month: PHP ";
     user.totalInvestments = getValidNumberInput();
-
+    
     user.totalExpenses = user.totalNeeds + user.totalWants + user.totalSavings + user.totalDebt + user.totalInvestments;
 
     cout << "\nExpense tracking completed successfully!\n";
@@ -225,9 +224,9 @@ void showFinancialSummary(const User &user) {
     cout << "* Total Debt: PHP " << user.totalDebt << "\n";
     cout << "* Total Investments: PHP " << user.totalInvestments << "\n";
     cout << "*******************************************************************\n";
-
+    
     double remainingBalance = user.monthlyIncome - user.totalExpenses;
-
+    
     if (remainingBalance < 0) {
         cout << "* Warning: You are overspending by PHP " << -remainingBalance << ". Try to reduce your expenses.\n";
     } else {
@@ -270,7 +269,7 @@ void trackBudgetForAllUsers() {
 
         string incomeSource = getValidTextInput("What is your source of income? (allowance, business, employment, pension): ");
         cout << "Your income source is: " << incomeSource << endl;
-
+        
         trackUserIncome(users[i]);
         trackUserExpenses(users[i]);
         showFinancialSummary(users[i]);
@@ -290,7 +289,7 @@ void trackBudgetForAllUsers() {
                     if (monthsDays.find(month) != monthsDays.end()) {
                         int daysInMonth = monthsDays[month];
                         cout << "The month of " << month << " has " << daysInMonth << " days.\n";
-
+                        
                         double budgetForMonth = daysInMonth * users[i].dailyIncome;
                         cout << "Your budget for this month is: PHP " << budgetForMonth << endl;
                         break;
@@ -299,7 +298,7 @@ void trackBudgetForAllUsers() {
                     }
                 }
                 break;
-            } else if (durationChoice == "weekly") {
+            } else if (durationChoice == "weekly") { 
                 cout << "You chose to track for 7 days.\n";
                 break;
             } else {
