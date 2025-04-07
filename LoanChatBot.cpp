@@ -22,11 +22,7 @@ void printPrompt() {
 }
 
 void clearScreen() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+    system("cls");
 }
 
 bool isValidName(const string& name) {
