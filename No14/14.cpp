@@ -21,6 +21,8 @@ struct User {
     vector<pair<string, double>> wants;  // para ma store und wants at ung expenses
 };
 
+
+
 map<string, int> monthsDays = {
     {"January", 31},
     {"February", 28},
@@ -80,37 +82,30 @@ void trackUserExpenses(User &user) {
     cout << "* Let's track your monthly expenses.                                   *\n";
     cout << "* Please enter your expenses below.                                    *\n";
     cout << "***********************************************************************\n";
-
-    // para sa Needs
+        
     cout << "\n-------------------- Needs --------------------\n";
-    int numNeeds;
-    cout << "Enter the number of needs: ";
-    while (true) {
-        cin >> numNeeds;
-        clearBuffer();
-        if (numNeeds < 0) {
-            cout << "Number of needs cannot be negative. Please enter a valid number.\n";
-        } else {
-            break;
-        }
-    }
+    double foodExpense, transportExpense, rentExpense, billsExpense;
 
-    if (numNeeds > 0) {
-        for (int i = 0; i < numNeeds; ++i) {
-            string need;
-            double expense;
-            cout << "\nEnter name of need " << (i + 1) << ": ";
-            getline(cin, need);
-            cout << "Enter expense for " << need << ": PHP ";
-            expense = getValidNumberInput();
-            user.needs.push_back(make_pair(need, expense));
-            user.totalNeeds += expense;
-        }
-    } else {
-        cout << "No needs entered.\n";
-    }
+    cout << "Enter expense for Food: PHP ";
+    foodExpense = getValidNumberInput();
+    user.needs.push_back(make_pair("Food", foodExpense));
+    user.totalNeeds += foodExpense;
 
-    // para sa Wants
+    cout << "Enter expense for Transport: PHP ";
+    transportExpense = getValidNumberInput();
+    user.needs.push_back(make_pair("Transport", transportExpense));
+    user.totalNeeds += transportExpense;
+
+    cout << "Enter expense for Rent: PHP ";
+    rentExpense = getValidNumberInput();
+    user.needs.push_back(make_pair("Rent", rentExpense));
+    user.totalNeeds += rentExpense;
+
+    cout << "Enter expense for Bills: PHP ";
+    billsExpense = getValidNumberInput();
+    user.needs.push_back(make_pair("Bills", billsExpense));
+    user.totalNeeds += billsExpense;
+
     cout << "\n-------------------- Wants --------------------\n";
     int numWants;
     cout << "Enter the number of wants: ";
@@ -139,19 +134,7 @@ void trackUserExpenses(User &user) {
         cout << "No wants entered.\n";
     }
 
-    // para sa Savings, Debt, and Investments
-    cout << "\n-------------------- Savings, Debt, and Investments --------------------\n";
-    
-    cout << "Enter total savings for the month: PHP ";
-    user.totalSavings = getValidNumberInput();
-    
-    cout << "Enter total debt for the month: PHP ";
-    user.totalDebt = getValidNumberInput();
-    
-    cout << "Enter total investments for the month: PHP ";
-    user.totalInvestments = getValidNumberInput();
-    
-    user.totalExpenses = user.totalNeeds + user.totalWants + user.totalSavings + user.totalDebt + user.totalInvestments;
+    user.totalExpenses = user.totalNeeds + user.totalWants;
 
     cout << "\nExpense tracking completed successfully!\n";
 }
@@ -163,11 +146,25 @@ void showFinancialSummary(const User &user) {
     cout << "* Weekly Income: PHP " << user.weeklyIncome << "\n";
     cout << "* Monthly Income: PHP " << user.monthlyIncome << "\n";
     cout << "* Total Expenses: PHP " << user.totalExpenses << "\n";
-    cout << "* Total Savings: PHP " << user.totalSavings << "\n";
-    cout << "* Total Debt: PHP " << user.totalDebt << "\n";
-    cout << "* Total Investments: PHP " << user.totalInvestments << "\n";
-    cout << "*******************************************************************\n";
     
+    // Breakdown of needs
+    if (!user.needs.empty()) {
+        cout << "\n-------------------- Needs Breakdown --------------------\n";
+        for (const auto& need : user.needs) {
+            cout << "* " << need.first << ": PHP " << need.second << "\n";
+        }
+    }
+
+    // Breakdown of wants
+    if (!user.wants.empty()) {
+        cout << "\n-------------------- Wants Breakdown --------------------\n";
+        for (const auto& want : user.wants) {
+            cout << "* " << want.first << ": PHP " << want.second << "\n";
+        }
+    }
+
+    cout << "*******************************************************************\n";
+
     double remainingBalance = user.monthlyIncome - user.totalExpenses;
     
     if (remainingBalance < 0) {
@@ -192,50 +189,38 @@ void trackBudgetForAllUsers() {
 
     vector<User> users(numUsers);
 
+    // Tanungin muna ang user kung anong month bago mag compute
+    string month;
+    int daysInMonth = 0; 
+    while (true) {
+        cout << "What month should we calculate for? (Enter a month from January to December): ";
+        getline(cin, month);
+
+        if (monthsDays.find(month) != monthsDays.end()) {
+            daysInMonth = monthsDays[month]; 
+            cout << "The month of " << month << " has " << daysInMonth << " days.\n";
+            break;
+        } else {
+            cout << "Invalid month entered. Please try again.\n";
+        }
+    }
+
     for (int i = 0; i < numUsers; ++i) {
         cout << "\nEnter name for user " << (i + 1) << ": ";
         getline(cin, users[i].name);
 
         string incomeSource = getValidTextInput("What is your source of income? (allowance, business, employment, pension): ");
         cout << "Your income source is: " << incomeSource << endl;
-        
+
         trackUserIncome(users[i]);
         trackUserExpenses(users[i]);
         showFinancialSummary(users[i]);
 
-        string durationChoice;
-        while (true) {
-            cout << "Do you want to track income and expenses weekly or monthly? (Enter 'weekly' or 'monthly'): ";
-            cin >> durationChoice;
-            clearBuffer();
-
-            if (durationChoice == "monthly") {
-                string month;
-                while (true) {
-                    cout << "Enter the month (January to December): ";
-                    getline(cin, month);
-
-                    if (monthsDays.find(month) != monthsDays.end()) {
-                        int daysInMonth = monthsDays[month];
-                        cout << "The month of " << month << " has " << daysInMonth << " days.\n";
-                        
-                        double budgetForMonth = daysInMonth * users[i].dailyIncome;
-                        cout << "Your budget for this month is: PHP " << budgetForMonth << endl;
-                        break;
-                    } else {
-                        cout << "Invalid month entered. Please try again.\n";
-                    }
-                }
-                break;
-            } else if (durationChoice == "weekly") { 
-                cout << "You chose to track for 7 days.\n";
-                break;
-            } else {
-                cout << "Invalid input, please choose 'weekly' or 'monthly'.\n";
-            }
-        }
+        double budgetForMonth = daysInMonth * users[i].dailyIncome;  
+        cout << "Your budget for this month is: PHP " << budgetForMonth << endl;
     }
 }
+
 
 int main() {
     cout << "************************ Budget and Finance Advisor ************************\n";

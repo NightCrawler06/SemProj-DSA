@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <limits>
 using namespace std;
 
 struct Patient {
@@ -17,53 +18,94 @@ struct Room {
     string roomType;
 };
 
+void clearInputBuffer() {
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
 void showPatientsAboutToFinish(const vector<Room>& hospitalRooms) {
-    cout << "\n--- Patients nearing completion of their treatment (less than 10 days left) ---\n";
+    cout << "\n************************ Patients Nearing Discharge ************************\n";
+    cout << "* Patients with less than 10 days remaining in their treatment plan         *\n";
+    cout << "*****************************************************************************\n";
+    
+    bool foundPatients = false;
+    
     for (int i = 0; i < hospitalRooms.size(); ++i) {
         Room room = hospitalRooms[i];
         for (int j = 0; j < room.patients.size(); ++j) {
             Patient patient = room.patients[j];
             if (patient.daysLeft <= 10) {
-                cout << "Patient: " << patient.name
-                        << ", Illness: " << patient.illness
-                        << ", Medicine: " << patient.medicine
-                        << ", Days Left: " << patient.daysLeft << endl;
+                cout << "* Room #" << room.roomNumber << " | Patient: " << patient.name
+                     << " | Illness: " << patient.illness
+                     << " | Medicine: " << patient.medicine
+                     << " | Days Left: " << patient.daysLeft << endl;
+                foundPatients = true;
             }
         }
     }
+    
+    if (!foundPatients) {
+        cout << "* No patients are nearing completion of their treatment at this time.    *\n";
+    }
+    
+    cout << "*****************************************************************************\n";
 }
 
 void showAllRoomDetails(const vector<Room>& hospitalRooms) {
-    cout << "\n--- Room Information ---\n";
+    cout << "\n************************ Hospital Room Information ************************\n";
+    cout << "* Detailed information about all rooms and patients                        *\n";
+    cout << "*****************************************************************************\n";
+    
     for (int i = 0; i < hospitalRooms.size(); ++i) {
         Room room = hospitalRooms[i];
-        cout << "Room #" << room.roomNumber << " (" << room.roomType << "):\n";
-        for (int j = 0; j < room.patients.size(); ++j) {
-            Patient patient = room.patients[j];
-            cout << "Name: " << patient.name
-                    << ", Illness: " << patient.illness
-                    << ", Medicine: " << patient.medicine
-                    << ", Time to take: " << patient.medicineTime
-                    << ", Days Left: " << patient.daysLeft << endl;
+        cout << "\n-------------------- Room #" << room.roomNumber << " (" << room.roomType << ") --------------------\n";
+        
+        if (room.patients.empty()) {
+            cout << "* No patients currently assigned to this room.\n";
+        } else {
+            for (int j = 0; j < room.patients.size(); ++j) {
+                Patient patient = room.patients[j];
+                cout << "* Patient #" << (j + 1) << ":\n";
+                cout << "* Name: " << patient.name << "\n";
+                cout << "* Illness: " << patient.illness << "\n";
+                cout << "* Medicine: " << patient.medicine << "\n";
+                cout << "* Time to take: " << patient.medicineTime << "\n";
+                cout << "* Days Left: " << patient.daysLeft << "\n";
+                
+                if (j < room.patients.size() - 1) {
+                    cout << "* ----------------------------------------\n";
+                }
+            }
         }
     }
+    
+    cout << "*****************************************************************************\n";
 }
 
 int main() {
     vector<Room> hospitalRooms;
 
+    cout << "************************ Hospital Management System ************************\n";
+    cout << "* Welcome to the Hospital Management System! This program helps you        *\n";
+    cout << "* manage patient information and track treatment progress.                 *\n";
+    cout << "*****************************************************************************\n";
+
     int totalRooms;
-    cout << "Enter the total number of rooms (minimum of 15): ";
+    cout << "\nEnter the total number of rooms (minimum of 15): ";
     cin >> totalRooms;
 
     if (totalRooms < 15) {
-        cout << "The hospital must have at least 15 rooms. Exiting...\n";
+        cout << "\n************************ Error ************************\n";
+        cout << "* The hospital must have at least 15 rooms.          *\n";
+        cout << "* Program will now exit.                             *\n";
+        cout << "*******************************************************\n";
         return 0;
     }
 
     for (int i = 0; i < totalRooms; ++i) {
         Room room;
-        cout << "\nEnter details for Room #" << i + 1 << ":\n";
+        cout << "\n************************ Room Setup ************************\n";
+        cout << "* Enter details for Room #" << i + 1 << "                              *\n";
+        cout << "***********************************************************\n";
 
         room.roomNumber = i + 1;
         cout << "Enter room type (Private, Semi-private, Ward): ";
@@ -73,11 +115,15 @@ int main() {
         cout << "How many patients in this room? (1 or 2): ";
         cin >> patientCount;
 
+        if (patientCount > 0) {
+            clearInputBuffer(); // Clear buffer before reading patient details
+        }
+
         for (int j = 0; j < patientCount; ++j) {
             Patient patient;
-            cout << "Enter details for Patient #" << j + 1 << ":\n";
+            cout << "\n-------------------- Patient #" << j + 1 << " --------------------\n";
+            
             cout << "Name: ";
-            cin.ignore();
             getline(cin, patient.name);
 
             cout << "Illness: ";
@@ -91,6 +137,7 @@ int main() {
 
             cout << "Days left for treatment: ";
             cin >> patient.daysLeft;
+            clearInputBuffer(); // Clear buffer after reading days
 
             room.patients.push_back(patient);
         }
@@ -101,6 +148,11 @@ int main() {
     showAllRoomDetails(hospitalRooms);
 
     showPatientsAboutToFinish(hospitalRooms);
+
+    cout << "\n*****************************************************************************\n";
+    cout << "*  Thank you for using the Hospital Management System! Providing quality    *\n";
+    cout << "*      care through better organization and patient monitoring.             *\n";
+    cout << "*****************************************************************************\n";
 
     return 0;
 }
