@@ -125,6 +125,7 @@ void suggestImprovement(const Team& t1, const Team& t2) {
 }
 
 
+
 void displayTeamMistakes(const Team& team) {
     int foot = 0, net = 0, liftCarry = 0, rotation = 0;
     for (const Player& p : team.players) {
