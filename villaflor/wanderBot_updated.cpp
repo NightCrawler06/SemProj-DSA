@@ -137,6 +137,7 @@ void showHistory() {
 void showHelp() {
     cout << "\nWanderBot Commands:\n";
     cout << "add                  - Add new location\n";
+    cout << "travel <start> to <end> <distance> - Estimate travel time & view route\n";
     cout << "show visited         - View visited places\n";
     cout << "show planned         - View planned trips\n";
     cout << "open <place>         - Open location in Google Maps\n";
@@ -148,8 +149,54 @@ void showHelp() {
     cout << "exit                 - End the session\n";
 }
 
+void estimateTravelTime(const string& from, const string& to, float distance) {
+    cout << "\n📍 Travel Time from " << from << " to " << to << " (" << distance << " km):\n";
+    cout << "- 🚗 By Car: " << (distance / 60.0) << " hours\n";
+    cout << "- 🚲 By Bicycle: " << (distance / 15.0) << " hours\n";
+    cout << "- 🚶 On Foot: " << (distance / 5.0) << " hours\n";
+
+    cout << "\nOpen this route in Google Maps? (yes/no): ";
+    string answer;
+    getline(cin, answer);
+    if (toLower(answer) == "yes") {
+        string url = "start https://www.google.com/maps/dir/" + from + "/" + to;
+        system(url.c_str());
+    }
+}
+
+
+void preloadLocations() {
+    vector<Location> preset = {
+        {"Calayo Beach", "planned", "A calm beach in Nasugbu", "2025-05-01"},
+        {"Tunnel in Nasugbu", "planned", "Iconic tunnel along scenic road", "2025-05-01"},
+        {"Punta Fuego", "planned", "Private beach resort", "2025-05-01"},
+        {"Canyon Cove", "planned", "Popular beach resort", "2025-05-01"},
+        {"Fortune Island", "planned", "Greek-column ruins and cliffs", "2025-05-01"},
+        {"Mount Batulao", "planned", "Hiking spot with scenic views", "2025-05-01"},
+        {"Matabungkay Beach", "planned", "Classic beach spot with floating cottages", "2025-05-01"},
+        {"Little Boracay (Calatagan)", "planned", "White sand stretch and clear waters", "2025-05-01"},
+        {"Caleruega Church", "planned", "Wedding-favorite church with gardens", "2025-05-01"},
+        {"Fantasy World (Lemery, Batangas)", "planned", "Abandoned theme park with Disney-like vibe", "2025-05-01"},
+        {"Taal Volcano", "planned", "Famous lake-in-a-volcano-in-a-lake", "2025-05-01"},
+        {"Sky Ranch Tagaytay", "planned", "Amusement rides with views", "2025-05-01"},
+        {"People’s Park in the Sky", "planned", "Old presidential mansion with views", "2025-05-01"},
+        {"Tagaytay Picnic Grove", "planned", "Picnic area with cable car and views", "2025-05-01"},
+        {"Twin Lakes", "planned", "Scenic area with Starbucks and wine bar", "2025-05-01"},
+        {"Museo Orlina", "planned", "Art museum featuring glass sculptures", "2025-05-01"},
+        {"Ayala Mall (Serin, Tagaytay)", "planned", "Small cozy mall with nice gardens", "2025-05-01"},
+        {"Festival Mall", "planned", "Big lifestyle mall in Alabang", "2025-05-01"},
+        {"SM Mall of Asia", "planned", "Massive mall by Manila Bay", "2025-05-01"},
+        {"Sombrero Island", "planned", "Small remote island shaped like a hat", "2025-05-01"}
+    };
+
+    journal.insert(journal.end(), preset.begin(), preset.end());
+}
+
+
+
 int main() {
     loadJournal();
+    if (journal.empty()) preloadLocations();
     cout << "Hello! I'm WanderBot, your travel companion.\n";
     cout << "Type 'help' to see what I can do.\n";
 
@@ -173,6 +220,25 @@ int main() {
         }
         else if (lower == "history") showHistory();
         else if (lower == "help") showHelp();
+        else if (lower.rfind("travel ", 0) == 0 && lower.find(" to ") != string::npos) {
+            size_t toPos = lower.find(" to ");
+            string rest = input.substr(toPos + 4);
+            string from = input.substr(7, toPos - 7); // extract original casing
+            size_t spacePos = rest.find_last_of(' ');
+        
+            if (spacePos == string::npos) {
+                cout << "Invalid format. Use: travel <start> to <end> <distance_in_km>\n";
+                continue;
+            }
+        
+            string to = rest.substr(0, spacePos);
+            try {
+                float distance = stof(rest.substr(spacePos + 1));
+                estimateTravelTime(from, to, distance);
+            } catch (...) {
+                cout << "Invalid distance. Make sure to enter a number.\n";
+            }
+        }        
         else cout << "Unknown command. Type 'help' to see available commands.\n";
     }
 

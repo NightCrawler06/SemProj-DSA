@@ -1,13 +1,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <map>
 #include <queue>
 #include <ctime>
 #include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <algorithm>
 
 using namespace std;
 
@@ -17,225 +13,224 @@ const int TOTAL_SLOTS = LEVELS * SLOTS_PER_LEVEL;
 
 struct Car {
     string plate;
-    string type;  
+    string type;
     int level;
     int slot;
     time_t entryTime;
 };
 
-vector<vector<bool>> parkingLevels(LEVELS, vector<bool>(SLOTS_PER_LEVEL, false));
-map<string, Car> parkedCars;
+vector<vector<bool>> parkingSlots(LEVELS, vector<bool>(SLOTS_PER_LEVEL, false));
+vector<Car> parkedCars;
 queue<string> waitingQueue;
 double totalIncome = 0.0;
 
-string timeToStr(time_t t) {
-    char buffer[80];
-    struct tm* timeInfo = localtime(&t);
-    strftime(buffer, sizeof(buffer), "%b %d %Y %I:%M:%S %p", timeInfo);
-    return string(buffer);
+int findCarIndex(string plate) {
+    for (int i = 0; i < parkedCars.size(); ++i) {
+        if (parkedCars[i].plate == plate) {
+            return i;
+        }
+    }
+    return -1;
 }
 
-
-double calculateFee(time_t in, time_t out) {
+double calculateFee(time_t in, time_t out, int hour = 1) {
     int hours = (int)difftime(out, in) / 3600;
     if (hours < 1) hours = 1;
-    double fee = 0;
-    for (int i = 1; i <= hours; ++i)
-        fee += 20 + (i - 1) * 10;  
-    return fee;
-}
-
-void saveData() {
-    ofstream file("parking_data.txt");
-    for (const auto& pair : parkedCars) {
-        const Car& car = pair.second;
-        file << car.plate << " " << car.type << " " << car.level << " " << car.slot << " " << car.entryTime << "\n";
-    }
-    ofstream incomeFile("total_income.txt");
-    incomeFile << totalIncome;
-}
-
-void loadData() {
-    ifstream file("parking_data.txt");
-    string plate, type;
-    int level, slot;
-    time_t entry;
-    while (file >> plate >> type >> level >> slot >> entry) {
-        Car car = {plate, type, level, slot, entry};
-        parkedCars[plate] = car;
-        parkingLevels[level][slot] = true;
-    }
-
-    ifstream incomeFile("total_income.txt");
-    if (incomeFile) incomeFile >> totalIncome;
+    if (hour > hours) return 0;
+    return 20 + (hour - 1) * 10 + calculateFee(in, out, hour + 1);
 }
 
 bool assignSlot(string plate, string type) {
-    cout << "\n--- CURRENT PARKING STATUS ---\n";
+    for (int i = 0; i < LEVELS; ++i) {
+        for (int j = 0; j < SLOTS_PER_LEVEL; ++j) {
+            if (!parkingSlots[i][j]) {
+                parkingSlots[i][j] = true;
+                Car car = {plate, type, i, j, time(nullptr)};
+                parkedCars.push_back(car);
+                cout << "Auto-parked " << plate << " at Level " << i + 1 << ", Slot " << j + 1 << endl;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool assignManualSlot(string plate, string type) {
+    cout << "\n--- CURRENT PARKING LAYOUT ---\n";
     for (int l = 0; l < LEVELS; ++l) {
         cout << "Level " << l + 1 << ": ";
         for (int s = 0; s < SLOTS_PER_LEVEL; ++s) {
-            cout << (parkingLevels[l][s] ? "[X]" : "[" + to_string(s + 1) + "]");
+            if (parkingSlots[l][s]) {
+                cout << "[X]";
+            } else {
+                if (s + 1 < 10) cout << "[0" << s + 1 << "]";
+                else cout << "[" << s + 1 << "]";
+            }
             if ((s + 1) % 10 == 0) cout << "\n           ";
         }
         cout << "\n";
     }
 
-    int chosenLevel;
-    cout << "\nChoose a level (1 to " << LEVELS << "): ";
-    cin >> chosenLevel;
+    int level, slot;
+    cout << "\nChoose level (1 to " << LEVELS << "): ";
+    cin >> level;
+    cout << "Choose slot number: ";
+    cin >> slot;
 
-    if (chosenLevel < 1 || chosenLevel > LEVELS) {
-        cout << "Invalid level.\n";
+    level -= 1;
+    slot -= 1;
+
+    if (level < 0 || level >= LEVELS || slot < 0 || slot >= SLOTS_PER_LEVEL) {
+        cout << "Invalid selection.\n";
         return false;
     }
 
-    int levelIndex = chosenLevel - 1;
-
-    vector<int> availableSlots;
-    for (int i = 0; i < SLOTS_PER_LEVEL; ++i) {
-        if (!parkingLevels[levelIndex][i]) {
-            availableSlots.push_back(i + 1);
-        }
-    }
-
-    if (availableSlots.empty()) {
-        cout << "No available slots in Level " << chosenLevel << ".\n";
+    if (parkingSlots[level][slot]) {
+        cout << "That slot is already taken!\n";
         return false;
     }
 
-    cout << "Available slots on Level " << chosenLevel << ": ";
-    for (int s : availableSlots) cout << "[" << s << "] ";
+    parkingSlots[level][slot] = true;
+    Car car = {plate, type, level, slot, time(nullptr)};
+    parkedCars.push_back(car);
 
-    cout << "\n";
-
-    int chosenSlot;
-    while (true) {
-        cout << "Choose a slot from the list above: ";
-        cin >> chosenSlot;
-
-        if (find(availableSlots.begin(), availableSlots.end(), chosenSlot) != availableSlots.end()) {
-            int slotIndex = chosenSlot - 1;
-            parkingLevels[levelIndex][slotIndex] = true;
-            Car car = {plate, type, levelIndex, slotIndex, time(nullptr)};
-            parkedCars[plate] = car;
-
-            cout << "Vehicle " << plate << " (" << type << ") parked at Level "
-                 << chosenLevel << ", Slot " << chosenSlot << " at "
-                 << timeToStr(car.entryTime) << endl;
-            return true;
-        } else {
-            cout << "Invalid slot. Please choose from the available ones.\n";
-        }
-    }
+    cout << "Manually parked " << plate << " at Level " << level + 1 << ", Slot " << slot + 1 << "\n";
+    return true;
 }
 
-
 void exitCar(string plate) {
-    if (parkedCars.find(plate) == parkedCars.end()) {
+    int idx = findCarIndex(plate);
+    if (idx == -1) {
         cout << "Plate not found.\n";
         return;
     }
-    Car car = parkedCars[plate];
-    time_t outTime = time(nullptr);
-    double fee = calculateFee(car.entryTime, outTime);
+
+    Car car = parkedCars[idx];
+    time_t now = time(nullptr);
+    double fee = calculateFee(car.entryTime, now);
     totalIncome += fee;
-    parkingLevels[car.level][car.slot] = false;
+    parkingSlots[car.level][car.slot] = false;
 
-    cout << "\n=====================================\n";
-    cout << "        PARKING RECEIPT\n";
-    cout << "=====================================\n";
-    cout << "Plate No.     : " << car.plate << "\n";
-    cout << "Vehicle Type  : " << car.type << "\n";
-    cout << "Parked At     : Level " << car.level + 1 << ", Slot " << car.slot + 1 << "\n";
-    cout << "Entry Time    : " << timeToStr(car.entryTime) << "\n";
-    cout << "Exit Time     : " << timeToStr(outTime) << "\n";
-    cout << "-------------------------------------\n";
-    cout << fixed << setprecision(2);
-    cout << "TOTAL FEE     : PHP " << fee << "\n";
-    cout << "=====================================\n";
+    cout << "\n--- RECEIPT ---\n";
+    cout << "Plate     : " << car.plate << endl;
+    cout << "Type      : " << car.type << endl;
+    cout << "Level     : " << car.level + 1 << endl;
+    cout << "Slot      : " << car.slot + 1 << endl;
+    cout << "Fee       : PHP " << fixed << setprecision(2) << fee << endl;
 
-
-    parkedCars.erase(plate);
-    saveData();
+    parkedCars.erase(parkedCars.begin() + idx);
 
     if (!waitingQueue.empty()) {
         string nextPlate = waitingQueue.front();
         waitingQueue.pop();
         string type;
-        cout << "\nNext in queue: " << nextPlate << " now being parked.\n";
-        cout << "Vehicle type for " << nextPlate << " (car/motorcycle/ev): ";
+        cout << "\nNext in queue: " << nextPlate << "\n";
+        cout << "Enter vehicle type: ";
         cin >> type;
-        assignSlot(nextPlate, type);
+
+        bool parked = assignSlot(nextPlate, type);
+        if (!parked) {
+            assignManualSlot(nextPlate, type);
+        }
     }
 }
 
 void showStatus() {
-    int count = 0;
+    int occupied = 0;
     cout << "\n=== PARKING STATUS ===\n";
     for (int l = 0; l < LEVELS; ++l) {
         cout << "Level " << l + 1 << ": ";
         for (int s = 0; s < SLOTS_PER_LEVEL; ++s) {
-            cout << (parkingLevels[l][s] ? "[X]" : "[ ]");
-            if (parkingLevels[l][s]) count++;
+            cout << (parkingSlots[l][s] ? "[X]" : "[ ]");
+            if ((s + 1) % 10 == 0) cout << "\n           ";
+            if (parkingSlots[l][s]) occupied++;
         }
-        cout << endl;
+        cout << "\n";
     }
-    cout << "\nOccupied: " << count << " / " << TOTAL_SLOTS << endl;
-    cout << "Available: " << TOTAL_SLOTS - count << endl;
-    cout << "Cars in queue: " << waitingQueue.size() << endl;
-    cout << "Total Income Collected: PHP" << fixed << setprecision(2) << totalIncome << endl;
+
+    cout << "Occupied : " << occupied << " / " << TOTAL_SLOTS << endl;
+    cout << "Available: " << TOTAL_SLOTS - occupied << endl;
+    cout << "Queue    : " << waitingQueue.size() << " cars\n";
+    cout << "Income   : PHP " << fixed << setprecision(2) << totalIncome << endl;
+}
+
+void sortParkedCars() {
+    int n = parkedCars.size();
+    for (int i = 0; i < n - 1; ++i) {
+        for (int j = 0; j < n - i - 1; ++j) {
+            if (parkedCars[j].plate > parkedCars[j + 1].plate) {
+                swap(parkedCars[j], parkedCars[j + 1]);
+            }
+        }
+    }
+}
+
+void listParkedCars() {
+    sortParkedCars();
+    cout << "\n--- PARKED VEHICLES ---\n";
+    for (const Car& car : parkedCars) {
+        cout << "- " << car.plate << " (" << car.type << ") -> L" << car.level + 1 << " S" << car.slot + 1 << endl;
+    }
 }
 
 void chatbot() {
-    string input;
+    string cmd;
     while (true) {
-        cout << "\nCommand (arrive/exit/status/list/quit): ";
-        cin >> input;
+        cout << "\nCommand (arrive / exit / status / list / quit): ";
+        cin >> cmd;
 
-        if (input == "arrive") {
-            string plate, type;
+        if (cmd == "arrive") {
+            string plate, type, mode;
             cout << "Plate number: ";
             cin >> plate;
-            if (parkedCars.count(plate)) {
-                cout << "Already parked.\n";
+
+            if (findCarIndex(plate) != -1) {
+                cout << "Car already parked!\n";
                 continue;
             }
+
             cout << "Vehicle type (car/motorcycle/ev): ";
             cin >> type;
-            if (!assignSlot(plate, type)) {
-                cout << "Parking full. Added to queue.\n";
+            cout << "Choose parking mode (auto/manual): ";
+            cin >> mode;
+
+            bool parked = false;
+            if (mode == "manual") {
+                parked = assignManualSlot(plate, type);
+            } else {
+                parked = assignSlot(plate, type);
+            }
+
+            if (!parked) {
+                cout << "Parking failed. Added to queue.\n";
                 waitingQueue.push(plate);
             }
-            saveData();
-        } else if (input == "exit") {
+
+        } else if (cmd == "exit") {
             string plate;
-            cout << "Plate number to exit: ";
+            cout << "Plate to exit: ";
             cin >> plate;
             exitCar(plate);
-        } else if (input == "status") {
+
+        } else if (cmd == "status") {
             showStatus();
-        } else if (input == "list") {
-            cout << "\nCurrently Parked Vehicles:\n";
-            for (const auto& pair : parkedCars) {
-                const Car& car = pair.second;
-                cout << "- " << car.plate << " (" << car.type << ") at L" << car.level + 1
-                     << " S" << car.slot + 1 << " | In: " << timeToStr(car.entryTime) << endl;
-            }
-        } else if (input == "quit") {
-            saveData();
-            cout << "Exiting Parking Manager...\n";
+
+        } else if (cmd == "list") {
+            listParkedCars();
+
+        } else if (cmd == "quit") {
+            cout << "Exiting ParkingBot...\n";
             break;
+
         } else {
-            cout << "Unknown command. Try: arrive, exit, status, list, quit.\n";
+            cout << "Unknown command.\n";
         }
     }
 }
 
 int main() {
-    cout << "Welcome to ParkingSpaceManagerBot\n";
-    cout << "Building has 5 Levels with 30 slots each (Total: 150 slots)\n";
-    loadData();
+    cout << "Welcome to ParkingBot \n";
+    cout << "Building has " << LEVELS << " Levels with " << SLOTS_PER_LEVEL << " slots each (Total: " << TOTAL_SLOTS << " slots)\n";
     chatbot();
     return 0;
 }

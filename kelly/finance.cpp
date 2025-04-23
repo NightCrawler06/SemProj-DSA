@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <vector>
 #include <string>
-#include <map>
 #include <limits>
 #include <fstream>
 
@@ -22,10 +21,12 @@ struct BudgetUser {
     vector<BudgetEntry> wants;
 };
 
-map<string, int> monthDays = {
-    {"January", 31}, {"February", 28}, {"March", 31}, {"April", 30}, {"May", 31}, {"June", 30},
-    {"July", 31}, {"August", 31}, {"September", 30}, {"October", 31}, {"November", 30}, {"December", 31}
+string months[] = {
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
 };
+int monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
 void pause() {
     cout << "Press Enter to continue...\n";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -137,16 +138,20 @@ int main() {
     cout << "     BudgetMate 2025 - Monthly Planner \n";
     cout << "==========================================\n\n";
 
-
+    int numUsers = (int)inputNumber("How many users will use the planner? ");
     string month;
+    int days;
     while (true) {
         month = inputText("Enter the month you are budgeting for: ");
-        if (monthDays.count(month)) break;
+        for (int i = 0; i < 12; ++i) {
+            if (months[i] == month) {
+                days = monthDays[i];
+                break;
+            }
+        }
+        if (days) break;
         cout << "Invalid month. Try again.\n";
     }
-
-    int days = monthDays[month];
-    int numUsers = (int)inputNumber("How many users will use the planner? ");
 
     for (int i = 0; i < numUsers; ++i) {
         BudgetUser user;
