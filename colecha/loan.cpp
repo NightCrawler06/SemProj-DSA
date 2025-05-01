@@ -69,21 +69,6 @@ void loadLoans() {
     file.close();
 }
 
-void saveLoans() {
-    ofstream file("loans.txt");
-    for (const Loan &l : loans) {
-        file << l.name << "|"
-             << l.amount << "|"
-             << l.rateOfInterest << "|"
-             << l.months << "|"
-             << (l.alreadyPaid ? "1" : "0") << "|"
-             << formatDate(l.dateOfPayment) << "|"
-             << l.collateral << "|"
-             << l.valueOfCollateral << "\n";
-    }
-    file.close();
-}
-
 void applyLoan() {
     Loan loan;
     cout << "\n[Apply for a New Loan]\n";
@@ -92,9 +77,9 @@ void applyLoan() {
 
     cout << "Loan Amount (PHP): ";
     cin >> loan.amount;
-    cout << "Interest Rate (%): ";
+    cout << "Interest Rate (% per annum): ";
     cin >> loan.rateOfInterest;
-    cout << "Repayment Period (months): ";
+    cout << "Payment Duration (months): ";
     cin >> loan.months;
     cin.ignore();
 
@@ -107,11 +92,36 @@ void applyLoan() {
     loan.dateOfPayment = getCurrentDate();
     loan.alreadyPaid = false;
 
-    loans.push_back(loan);
-    saveLoans();
+    // Calculations
+    double totalInterest = (loan.amount * loan.rateOfInterest * loan.months) / (12 * 100);
+    double totalPayable = loan.amount + totalInterest;
+    double monthlyPayment = totalPayable / loan.months;
 
-    cout << "\nLoan added successfully!\n";
+    Date dueDate = loan.dateOfPayment;
+    dueDate.month += loan.months;
+    while (dueDate.month > 12) {
+        dueDate.month -= 12;
+        dueDate.year++;
+    }
+
+    loans.push_back(loan);
+    cout << "\n================ Loan Details =================\n";
+    cout << "Borrower Name     : " << loan.name << "\n\n";
+    cout << "Loan Amount       : PHP " << fixed << setprecision(2) << loan.amount << "\n";
+    cout << "Interest Rate     : " << loan.rateOfInterest << "% per annum\n";
+    cout << "Payment Duration  : " << loan.months << " months\n";
+    cout << "Monthly Payment   : PHP " << monthlyPayment << "\n";
+    cout << "Total to Pay      : PHP " << totalPayable << "\n";
+    cout << "Start Date        : " << formatDate(loan.dateOfPayment) << "\n";
+    cout << "Due Date          : " << formatDate(dueDate) << "\n";
+    cout << "Collateral        : " << loan.collateral << " (Value: PHP " << loan.valueOfCollateral << ")\n";
+    cout << "------------------------------------------------\n";
+    cout << "Penalty if unpaid on time:\n";
+    cout << "  > Collateral becomes lender's property\n";
+    cout << "  > Consumer still required to pay remaining balance\n";
+    cout << "=====================================================\n";
 }
+
 
 void listLoans(bool paid) {
     cout << "\n[" << (paid ? "Paid" : "Unpaid") << " Loans]\n";
@@ -137,7 +147,6 @@ void markAsPaid() {
     for (Loan &l : loans) {
         if (l.name == name && !l.alreadyPaid) {
             l.alreadyPaid = true;
-            saveLoans();
             cout << "Marked as paid successfully.\n";
             return;
         }
