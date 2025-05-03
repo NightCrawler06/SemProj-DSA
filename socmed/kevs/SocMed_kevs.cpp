@@ -26,31 +26,32 @@ class SocialMedia {
     void initUsers() {
         if (!users.empty()) return;
         vector<string> names = {
-            "alice", "bob", "carol", "dave", "eve", "frank", "grace", "heidi",
-            "ivan", "judy", "karl", "lisa", "mallory", "nancy", "olivia", "peggy",
-            "quincy", "ralph", "susan", "trent"
-        };
+    "kieven", "euel", "jerome", "dexter", "ezequel", "gianne", "mark", "nelson", 
+    "buboy", "bubski", "anas", "jirom", "kevs", "dex", "franc", "kiel", 
+    "amira", "raisen", "lee", "julius"
+};
         for (auto& name : names) users[name] = new User(name);
 
-        users["alice"]->friends = {"bob", "carol", "dave"};
-        users["bob"]->friends = {"alice", "eve", "heidi"};
-        users["carol"]->friends = {"alice", "frank", "grace"};
-        users["dave"]->friends = {"alice", "heidi", "ivan"};
-        users["eve"]->friends = {"bob", "mallory", "nancy"};
-        users["frank"]->friends = {"carol", "peggy", "ralph"};
-        users["grace"]->friends = {"carol", "karl", "susan"};
-        users["heidi"]->friends = {"alice", "dave", "peggy"};
-        users["ivan"]->friends = {"dave", "judy", "trent"};
-        users["judy"]->friends = {"ivan", "lisa", "susan"};
-        users["karl"]->friends = {"grace", "mallory", "trent"};
-        users["lisa"]->friends = {"judy", "nancy", "ralph"};
-        users["mallory"]->friends = {"eve", "karl", "olivia"};
-        users["nancy"]->friends = {"eve", "lisa", "ralph"};
-        users["olivia"]->friends = {"mallory", "trent"};
-        users["peggy"]->friends = {"frank", "heidi"};
-        users["ralph"]->friends = {"frank", "lisa", "nancy"};
-        users["susan"]->friends = {"grace", "judy", "trent"};
-        users["trent"]->friends = {"ivan", "karl", "susan"};
+       users["kieven"]->friends = {"euel", "jerome", "dexter"};
+	   users["euel"]->friends = {"kieven", "gianne", "mark"};
+users["jerome"]->friends = {"kieven", "nelson", "ezequel"};
+users["dexter"]->friends = {"kieven", "anas", "dex"};
+users["ezequel"]->friends = {"jerome", "gianne", "buboy"};
+users["gianne"]->friends = {"euel", "ezequel", "bubski"};
+users["mark"]->friends = {"euel", "jirom", "kevs"};
+users["nelson"]->friends = {"jerome", "kevs", "franc"};
+users["buboy"]->friends = {"ezequel", "kiel", "lee"};
+users["bubski"]->friends = {"gianne", "amira", "raisen"};
+users["anas"]->friends = {"dexter", "julius"};
+users["jirom"]->friends = {"mark", "dex", "kiel"};
+users["kevs"]->friends = {"mark", "nelson", "amira"};
+users["dex"]->friends = {"dexter", "jirom", "franc"};
+users["franc"]->friends = {"nelson", "dex", "lee"};
+users["kiel"]->friends = {"buboy", "jirom", "julius"};
+users["amira"]->friends = {"bubski", "kevs", "raisen"};
+users["raisen"]->friends = {"bubski", "amira", "lee"};
+users["lee"]->friends = {"buboy", "franc", "raisen"};
+users["julius"]->friends = {"anas", "kiel"};
     }
 
 public:
