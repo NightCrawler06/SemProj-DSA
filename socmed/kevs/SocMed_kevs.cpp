@@ -1,6 +1,4 @@
 #include <iostream>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <algorithm>
 
@@ -8,172 +6,282 @@ using namespace std;
 
 class User {
 public:
-    string name, profileDescription = "No description set.";
-    unordered_set<string> friends;
-    User(string n) : name(n) {}
-};
+    string name;
+    string description = "No description set.";
+    vector<string> friends;
+    vector<string> likes;
+    vector<string> favoriteMusic;
+    vector<string> favoriteSports;
 
-class SocialMedia {
-    unordered_map<string, User*> users;
-    string currentUser;
-
-    string toLower(const string& str) {
-        string res = str;
-        transform(res.begin(), res.end(), res.begin(), ::tolower);
-        return res;
+    User(string userName) {
+        name = userName;
     }
 
-    void initUsers() {
-        if (!users.empty()) return;
-        vector<string> names = {
-    "kieven", "euel", "jerome", "dexter", "ezequel", "gianne", "mark", "nelson", 
-    "buboy", "bubski", "anas", "jirom", "kevs", "dex", "franc", "kiel", 
-    "amira", "raisen", "lee", "julius"
-};
-        for (auto& name : names) users[name] = new User(name);
-
-       users["kieven"]->friends = {"euel", "jerome", "dexter"};
-	   users["euel"]->friends = {"kieven", "gianne", "mark"};
-users["jerome"]->friends = {"kieven", "nelson", "ezequel"};
-users["dexter"]->friends = {"kieven", "anas", "dex"};
-users["ezequel"]->friends = {"jerome", "gianne", "buboy"};
-users["gianne"]->friends = {"euel", "ezequel", "bubski"};
-users["mark"]->friends = {"euel", "jirom", "kevs"};
-users["nelson"]->friends = {"jerome", "kevs", "franc"};
-users["buboy"]->friends = {"ezequel", "kiel", "lee"};
-users["bubski"]->friends = {"gianne", "amira", "raisen"};
-users["anas"]->friends = {"dexter", "julius"};
-users["jirom"]->friends = {"mark", "dex", "kiel"};
-users["kevs"]->friends = {"mark", "nelson", "amira"};
-users["dex"]->friends = {"dexter", "jirom", "franc"};
-users["franc"]->friends = {"nelson", "dex", "lee"};
-users["kiel"]->friends = {"buboy", "jirom", "julius"};
-users["amira"]->friends = {"bubski", "kevs", "raisen"};
-users["raisen"]->friends = {"bubski", "amira", "lee"};
-users["lee"]->friends = {"buboy", "franc", "raisen"};
-users["julius"]->friends = {"anas", "kiel"};
+    bool isFriend(string otherUserName) {
+        return find(friends.begin(), friends.end(), otherUserName) != friends.end();
     }
 
-public:
-    SocialMedia() { initUsers(); }
-
-    void login() {
-        cout << "Enter username: "; string name; cin >> name;
-        name = toLower(name);
-        if (users.find(name) == users.end()) {
-            cout << "User not found. Create new? (y/n): "; char c; cin >> c;
-            if (c == 'y' || c == 'Y') {
-                users[name] = new User(name);
-                currentUser = name;
-                cout << "Account created. Logged in as " << name << "\n";
-            } else return;
-        } else {
-            currentUser = name;
-            cout << "Welcome back, " << currentUser << "!\n";
-        }
+    void addFriend(string otherUserName) {
+        if (!isFriend(otherUserName))
+            friends.push_back(otherUserName);
     }
 
-    void logout() {
-        if (currentUser.empty()) cout << "Not logged in.\n";
-        else { cout << "Logged out.\n"; currentUser = ""; }
-    }
-
-    void setDescription() {
-        if (currentUser.empty()) return;
-        cout << "Enter new description: ";
-        cin.ignore(); string desc; getline(cin, desc);
-        users[currentUser]->profileDescription = desc;
-        cout << "Description updated.\n";
-    }
-
-    void viewProfile() {
-        if (currentUser.empty()) return;
-        auto* u = users[currentUser];
-        cout << "\nProfile: " << u->name << "\nDescription: " << u->profileDescription << "\n";
+    void removeFriend(string otherUserName) {
+        friends.erase(remove(friends.begin(), friends.end(), otherUserName), friends.end());
     }
 
     void viewFriends() {
-        if (currentUser.empty()) return;
-        auto& f = users[currentUser]->friends;
-        if (f.empty()) cout << "No friends yet.\n";
-        else for (auto& fr : f) cout << "- " << fr << "\n";
+        if (friends.empty()) {
+            cout << "No friends yet.\n";
+        } else {
+            for (string friendName : friends)
+                cout << "- " << friendName << "\n";
+        }
+    }
+};
+
+class SocialMedia {
+    vector<User> userList;
+    string currentLoggedInUser;
+
+    string toLower(string inputString) {
+        transform(inputString.begin(), inputString.end(), inputString.begin(), ::tolower);
+        return inputString;
+    }
+
+    User* getUserByName(string userName) {
+        for (auto& user : userList)
+            if (user.name == userName)
+                return &user;
+        return nullptr;
+    }
+
+    void addInitialUsers() {
+        vector<string> defaultUserNames = {
+            "kevs", "dex", "franc", "amira", "raisen", "lee"
+        };
+        for (string name : defaultUserNames)
+            userList.push_back(User(name));
+    }
+
+public:
+    SocialMedia() {
+        addInitialUsers();
+    }
+
+    void login() {
+        cout << "Enter username: ";
+        string enteredName;
+        cin >> enteredName;
+        enteredName = toLower(enteredName);
+
+        User* userPointer = getUserByName(enteredName);
+        if (!userPointer) {
+            cout << "User not found. Create new? (y/n): ";
+            char createChoice;
+            cin >> createChoice;
+            if (createChoice == 'y' || createChoice == 'Y') {
+                userList.push_back(User(enteredName));
+                cout << "User created.\n";
+            } else {
+                return;
+            }
+        }
+        currentLoggedInUser = enteredName;
+        cout << "Logged in as " << enteredName << "\n";
+    }
+
+    void logout() {
+        currentLoggedInUser = "";
+        cout << "Logged out.\n";
+    }
+
+    void viewProfile() {
+        User* user = getUserByName(currentLoggedInUser);
+        cout << "\nProfile: " << user->name << "\n";
+        cout << "Description: " << user->description << "\n";
+    }
+
+    void setDescription() {
+        User* user = getUserByName(currentLoggedInUser);
+        cout << "Enter new description: ";
+        cin.ignore();
+        getline(cin, user->description);
+        cout << "Description updated.\n";
+    }
+
+    void viewFriends() {
+        getUserByName(currentLoggedInUser)->viewFriends();
+    }
+
+    void viewMutualFriends() {
+        cout << "Enter username to compare: ";
+        string otherName;
+        cin >> otherName;
+        otherName = toLower(otherName);
+
+        User* userA = getUserByName(currentLoggedInUser);
+        User* userB = getUserByName(otherName);
+
+        if (!userB) {
+            cout << "User not found.\n";
+            return;
+        }
+
+        cout << "Mutual friends with " << otherName << ":\n";
+        bool found = false;
+        for (string f : userA->friends)
+            if (userB->isFriend(f)) {
+                cout << "- " << f << "\n";
+                found = true;
+            }
+        if (!found) cout << "None.\n";
     }
 
     void addFriend() {
-        if (currentUser.empty()) return;
-        cout << "Enter username to add: "; string name; cin >> name;
-        name = toLower(name);
-        if (name == currentUser || users.find(name) == users.end()) {
-            cout << "Invalid user.\n"; return;
+        cout << "Enter username to add: ";
+        string friendName;
+        cin >> friendName;
+        friendName = toLower(friendName);
+
+        if (friendName == currentLoggedInUser || !getUserByName(friendName)) {
+            cout << "Invalid user.\n";
+            return;
         }
-        auto* u = users[currentUser];
-        if (u->friends.count(name)) cout << "Already friends.\n";
-        else {
-            u->friends.insert(name);
-            users[name]->friends.insert(currentUser);
-            cout << "Now friends with " << name << "\n";
+
+        User* u = getUserByName(currentLoggedInUser);
+        if (u->isFriend(friendName)) {
+            cout << "Already friends.\n";
+        } else {
+            u->addFriend(friendName);
+            getUserByName(friendName)->addFriend(currentLoggedInUser);
+            cout << "You are now friends.\n";
         }
     }
 
     void removeFriend() {
-        if (currentUser.empty()) return;
-        cout << "Enter username to remove: "; string name; cin >> name;
-        name = toLower(name);
-        auto* u = users[currentUser];
-        if (!u->friends.count(name)) cout << "Not friends.\n";
-        else {
-            cout << "Confirm removal? (y/n): "; char c; cin >> c;
-            if (c == 'y' || c == 'Y') {
-                u->friends.erase(name);
-                users[name]->friends.erase(currentUser);
-                cout << name << " removed.\n";
-            }
+        cout << "Enter username to remove: ";
+        string friendName;
+        cin >> friendName;
+        friendName = toLower(friendName);
+
+        User* u = getUserByName(currentLoggedInUser);
+        if (!u->isFriend(friendName)) {
+            cout << "Not friends.\n";
+            return;
+        }
+
+        u->removeFriend(friendName);
+        getUserByName(friendName)->removeFriend(currentLoggedInUser);
+        cout << friendName << " removed.\n";
+    }
+
+    void inputSimpleList(vector<string>& list, const string& label) {
+        cout << "Enter " << label << " separated by space (type 'done' to finish): ";
+        list.clear();
+        string item;
+        while (cin >> item && item != "done") {
+            list.push_back(toLower(item));
         }
     }
 
-    void mutualFriends() {
-        if (currentUser.empty()) return;
-        cout << "Enter username: "; string name; cin >> name;
-        name = toLower(name);
-        if (users.find(name) == users.end()) { cout << "User not found.\n"; return; }
+    void editLikes() {
+        inputSimpleList(getUserByName(currentLoggedInUser)->likes, "likes");
+    }
 
-        cout << "Mutual friends with " << name << ":\n";
-        bool any = false;
-        for (auto& f : users[currentUser]->friends)
-            if (users[name]->friends.count(f)) {
-                cout << "- " << f << "\n"; any = true;
+    void editMusic() {
+        inputSimpleList(getUserByName(currentLoggedInUser)->favoriteMusic, "favorite music");
+    }
+
+    void editSports() {
+        inputSimpleList(getUserByName(currentLoggedInUser)->favoriteSports, "favorite sports");
+    }
+
+    void suggestFriends() {
+        User* user = getUserByName(currentLoggedInUser);
+        if (!user) return;
+
+        vector<pair<string, int>> suggestions;
+
+        for (User& other : userList) {
+            if (other.name == user->name || user->isFriend(other.name)) continue;
+
+            int score = 0;
+            for (string& like : user->likes)
+                if (find(other.likes.begin(), other.likes.end(), like) != other.likes.end()) score++;
+            for (string& music : user->favoriteMusic)
+                if (find(other.favoriteMusic.begin(), other.favoriteMusic.end(), music) != other.favoriteMusic.end()) score++;
+            for (string& sport : user->favoriteSports)
+                if (find(other.favoriteSports.begin(), other.favoriteSports.end(), sport) != other.favoriteSports.end()) score++;
+            for (string& f : user->friends)
+                if (other.isFriend(f)) score++;
+
+            if (score > 0)
+                suggestions.push_back(make_pair(other.name, score));
+        }
+
+        sort(suggestions.begin(), suggestions.end(), [](const pair<string, int>& a, const pair<string, int>& b) {
+            return a.second > b.second;
+        });
+
+        cout << "\nFriend Suggestions:\n";
+        if (suggestions.empty()) {
+            cout << "No suggestions.\n";
+        } else {
+            for (auto& suggestion : suggestions)
+                cout << "- " << suggestion.first << " (score: " << suggestion.second << ")\n";
+        }
+    }
+
+    void searchUser() {
+        cout << "Enter name to search: ";
+        string searchName;
+        cin >> searchName;
+
+        bool found = false;
+        for (User& user : userList) {
+            if (user.name.find(searchName) != string::npos) {
+                cout << "- " << user.name << "\n";
+                found = true;
             }
-        if (!any) cout << "None.\n";
+        }
+        if (!found) cout << "No matching users.\n";
     }
 
     void mainMenu() {
         while (true) {
             cout << "\n--- Menu ---\n";
-            if (currentUser.empty()) {
+            if (currentLoggedInUser.empty()) {
                 cout << "1. Log In\n2. Exit\nChoice: ";
-                int ch; 
-                cin >> ch;
-                if (ch == 1) login();
-                else if (ch == 2) break;
+                int userChoice;
+                cin >> userChoice;
+                if (userChoice == 1) login();
+                else break;
             } else {
                 cout << "1. View Profile\n2. Add Friend\n3. Remove Friend\n4. Log Out\n5. Exit\nChoice: ";
-                int ch; 
-                cin >> ch;
-                if (ch == 1) {
+                int userChoice;
+                cin >> userChoice;
+
+                if (userChoice == 1) {
                     viewProfile();
                     while (true) {
-                        cout << "1. View Friends\n2. View Mutual Friends\n3. Edit Description\n4. Back\nChoice: ";
-                        int c; 
-                        cin >> c;
-                        if (c == 1) viewFriends();
-                        else if (c == 2) mutualFriends();
-                        else if (c == 3) setDescription();
+                        cout << "\n1. View Friends\n2. View Mutual Friends\n3. Edit Description\n4. Edit Likes\n5. Edit Music\n6. Edit Sports\n7. Suggest Friends\n8. Search User\n9. Back\nChoice: ";
+                        int subChoice;
+                        cin >> subChoice;
+                        if (subChoice == 1) viewFriends();
+                        else if (subChoice == 2) viewMutualFriends();
+                        else if (subChoice == 3) setDescription();
+                        else if (subChoice == 4) editLikes();
+                        else if (subChoice == 5) editMusic();
+                        else if (subChoice == 6) editSports();
+                        else if (subChoice == 7) suggestFriends();
+                        else if (subChoice == 8) searchUser();
                         else break;
                     }
-                } else if (ch == 2) addFriend();
-                else if (ch == 3) removeFriend();
-                else if (ch == 4) logout();
-                else if (ch == 5) break;
+                } else if (userChoice == 2) addFriend();
+                else if (userChoice == 3) removeFriend();
+                else if (userChoice == 4) logout();
+                else break;
             }
         }
     }

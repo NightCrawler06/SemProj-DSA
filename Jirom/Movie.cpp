@@ -1,22 +1,15 @@
 #include <iostream>
 #include <vector>
-#include <string>
-#include <cstdlib>
-#include <ctime>
-#include <set>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-
+#include <algorithm>
 using namespace std;
 
-
 struct Movie {
-    string name;
+    string title;
     string genre;
-    double rating;
+    float rating;
     string description;
 };
+
 
 vector<Movie> actionMovies = {
     {"Mad Max: Fury Road", "Action", 8.1, "In a post-apocalyptic wasteland, Max teams up with Furiosa to escape a tyrannical warlord."},
@@ -105,50 +98,13 @@ vector<Movie> sciFiMovies = {
     {"A Clockwork Orange", "Sci-Fi", 8.3, "In a dystopian future, a young delinquent undergoes behavioral modification in an attempt to be cured of his violent tendencies."}
 };
 
+
 vector<Movie> likedMovies;
+vector<Movie> watchHistory;
+vector<Movie> watchLater;
 
-void saveLikedList() {
-    ofstream outputFile("likedList.txt");
-    for (const Movie& movie : likedMovies) {
-        outputFile << movie.name << "|" << movie.genre << "|" << movie.rating << "|" << movie.description << endl;
-    }
-}
-
-void loadLikedList() {
-    likedMovies.clear();
-    ifstream file("likedList.txt");
-
-    if (!file) {
-        cerr << "No saved liked list found.\n";
-        return;
-    }
-
-    string line;
-    while (getline(file, line)) {
-        stringstream ss(line);
-        string name, genre, ratingStr, description;
-
-        if (!getline(ss, name, '|') ||
-            !getline(ss, genre, '|') ||
-            !getline(ss, ratingStr, '|') ||
-            !getline(ss, description)) {
-            cerr << "Skipping malformed line: " << line << endl;
-            continue;
-        }
-
-        try {
-            double rating = stod(ratingStr);
-            likedMovies.push_back({name, genre, rating, description});
-        } catch (const invalid_argument& e) {
-            cerr << "Invalid rating in line: " << line << endl;
-        }
-    }
-
-    file.close();
-}
-
-vector<Movie>* getGenreMovies(int genreChoice) {
-    switch (genreChoice) {
+vector<Movie>* getGenreList(int choice) {
+    switch (choice) {
         case 1: return &actionMovies;
         case 2: return &dramaMovies;
         case 3: return &comedyMovies;
@@ -158,178 +114,110 @@ vector<Movie>* getGenreMovies(int genreChoice) {
     }
 }
 
+void displayMovie(const Movie& m) {
+    cout << "Title: " << m.title << "\nGenre: " << m.genre
+         << "\nRating: " << m.rating << "\nDescription: " << m.description << "\n";
+}
 
-void recommendMovies(vector<Movie>& genreMovies, vector<Movie>& recommendedMovies) {
-    recommendedMovies.clear();
-    set<int> selectedIndexes;
-
-    while (recommendedMovies.size() < 3 && selectedIndexes.size() < genreMovies.size()) {
-        int randomIndex = rand() % genreMovies.size();
-        if (selectedIndexes.find(randomIndex) == selectedIndexes.end()) {
-            recommendedMovies.push_back(genreMovies[randomIndex]);
-            selectedIndexes.insert(randomIndex);
-        }
+void showMovieList(const vector<Movie>& list, string header) {
+    if (list.empty()) {
+        cout << "No movies in " << header << ".\n";
+        return;
     }
-
-    for (int i = 0; i < recommendedMovies.size(); i++) {
-        cout << setw(2) << right << i + 1 << ". " << recommendedMovies[i].name
-             << " (Rating: " << recommendedMovies[i].rating << ")" << endl;
-        cout << "    " << recommendedMovies[i].description << endl;
+    cout << "\n--- " << header << " ---\n";
+    for (const Movie& m : list) {
+        displayMovie(m);
+        cout << "-------------------\n";
     }
 }
 
-
-
-void addToLikedList(int movieChoice, vector<Movie>& recommendedMovies) {
-    const Movie& selectedMovie = recommendedMovies[movieChoice - 1];
-
-    for (const Movie& movie : likedMovies) {
-        if (movie.name == selectedMovie.name) {
-            cout << "'" << selectedMovie.name << "' is already in your liked list!" << endl;
-            return;
-        }
-    }
-
-    likedMovies.push_back(selectedMovie);
-    saveLikedList();
-    cout << "'" << selectedMovie.name << "' has been successfully added to your liked list!" << endl;
-}
-
-
-
-void showLikedList() {
-    if (likedMovies.empty()) {
-        cout << "\nYour liked list is empty." << endl;
-    } else {
-        cout << "\nYour liked list:" << endl;
-        for (int i = 0; i < likedMovies.size(); i++) {
-            cout << setw(2) << right << i + 1 << ". " << likedMovies[i].name
-                 << " (Rating: " << likedMovies[i].rating << ")" << endl;
-        }
-    }
-}
-
-void showMainMenu() {
-    cout << "\n*********************************************" << endl;
-    cout << "*            Movie Recommender Bot         *" << endl;
-    cout << "*           Please select an option:       *" << endl;
-    cout << "*------------------------------------------*" << endl;
-    cout << "* 1. Get Movie Recommendations             *" << endl;
-    cout << "* 2. Show Liked List                      *" << endl;
-    cout << "* 3. Exit                                  *" << endl;
-    cout << "*********************************************" << endl;
-    cout << "Enter your choice (1, 2, or 3): ";
-}
-
-void showGenreMenu() {
-    cout << "\n*********************************************" << endl;
-    cout << "*       Movie Genre Selection             *" << endl;
-    cout << "*------------------------------------------*" << endl;
-    cout << "* 1. Action                               *" << endl;
-    cout << "* 2. Drama                                *" << endl;
-    cout << "* 3. Comedy                               *" << endl;
-    cout << "* 4. Horror                               *" << endl;
-    cout << "* 5. Sci-Fi                               *" << endl;
-    cout << "* 6. Back to Main Menu                    *" << endl;
-    cout << "*********************************************" << endl;
-    cout << "Enter your choice (1-6): ";
-}
-
-bool isValidChoice(int choice, int min, int max) {
-    return choice >= min && choice <= max;
-}
-
-int getValidatedChoice(int min, int max) {
+void recommendMovie() {
+    cout << "Choose a genre:\n";
+    cout << "1. Action\n2. Drama\n3. Comedy\n4. Horror\n5. Sci-Fi\nChoice: ";
     int choice;
-    while (true) {
-        cin >> choice;
-        if (isValidChoice(choice, min, max)) {
-            return choice;
+    cin >> choice;
+
+    vector<Movie>* genreList = getGenreList(choice);
+    if (!genreList || genreList->empty()) {
+        cout << "Invalid genre.\n";
+        return;
+    }
+
+    for (Movie& m : *genreList) {
+        cout << "\nRecommended Movie:\n";
+        displayMovie(m);
+
+        cout << "Have you watched this? (y/n): ";
+        char seen;
+        cin >> seen;
+
+        if (seen == 'y' || seen == 'Y') {
+            watchHistory.push_back(m);
+            cout << "Added to Watch History.\n";
+
+            cout << "Did you like it? (y/n): ";
+            char liked;
+            cin >> liked;
+            if (liked == 'y' || liked == 'Y') {
+                likedMovies.push_back(m);
+                cout << "Added to Liked Movies.\n";
+            }
+            break;
         } else {
-            cout << "Invalid choice. Please enter a number between " << min << " and " << max << ": ";
+            cout << "Add to Watch Later? (y/n): ";
+            char later;
+            cin >> later;
+            if (later == 'y' || later == 'Y') {
+                watchLater.push_back(m);
+                cout << "Added to Watch Later list.\n";
+            }
+            break;
         }
     }
+}
+
+void showBestMovie() {
+    if (likedMovies.empty() && watchHistory.empty()) {
+        cout << "You haven't liked or watched any movies yet.\n";
+        return;
+    }
+
+    Movie best = {"", "", 0.0, ""};
+
+    for (const Movie& m : likedMovies)
+        if (m.rating > best.rating)
+            best = m;
+
+    for (const Movie& m : watchHistory)
+        if (m.rating > best.rating)
+            best = m;
+
+    cout << "\nBest Movie You've Seen:\n";
+    displayMovie(best);
 }
 
 int main() {
-    srand(time(0));
-    loadLikedList();
-    int movieChoice;
-    vector<Movie> recommendedMovies;
-
     while (true) {
-        showMainMenu();
+        cout << "\n=== Movie Recommender Menu ===\n";
+        cout << "1. Recommend Movie\n";
+        cout << "2. View Liked Movies\n";
+        cout << "3. View Watch History\n";
+        cout << "4. View Watch Later List\n";
+        cout << "5. Show Best Movie\n";
+        cout << "6. Exit\n";
+        cout << "Enter your choice: ";
 
-        int mainChoice = getValidatedChoice(1, 3);
+        int menuChoice;
+        cin >> menuChoice;
 
-        if (mainChoice == 1) {
-            while (true) {
-                showGenreMenu();
-
-                int genreChoice = getValidatedChoice(1, 6);
-
-                if (genreChoice == 6) {
-                    cout << "\nReturning to the main menu...\n" << endl;
-                    break;
-                }
-
-                vector<Movie>* genreMovies = getGenreMovies(genreChoice);
-                if (genreMovies == nullptr) {
-                    cout << "Sorry, I don't have recommendations for that genre. Please try again." << endl;
-                } else {
-                    cout << "\nHere are some movie recommendations:" << endl;
-                    recommendMovies(*genreMovies, recommendedMovies);
-
-                    while (true) {
-                        cout << "\nWhat would you like to do next?" << endl;
-                        cout << "Options: " << endl;
-                        cout << "  1. Add a movie to your liked list" << endl;
-                        cout << "  2. Get more movie recommendations" << endl;
-                        cout << "  3. Show your liked list" << endl;
-                        cout << "  4. Remove a movie from your liked list" << endl;
-                        cout << "  5. Return to the main menu" << endl;
-                        cout << "\nEnter your choice (1-5): ";
-
-                        int actionChoice = getValidatedChoice(1, 5);
-
-                        if (actionChoice == 1) {
-                            cout << "\nEnter the number of the movie you want to add to your liked list: ";
-                            movieChoice = getValidatedChoice(1, 3);
-                            addToLikedList(movieChoice, recommendedMovies);
-                        } else if (actionChoice == 2) {
-                            break;
-                        } else if (actionChoice == 3) {
-                            showLikedList();
-                        } else if (actionChoice == 4) {
-                            showLikedList();
-                            cout << "\nEnter the number of the movie to remove from the liked list: ";
-                            int removeChoice;
-                            cin >> removeChoice;
-                            if (removeChoice >= 1 && removeChoice <= likedMovies.size()) {
-                                likedMovies.erase(likedMovies.begin() + removeChoice - 1);
-                                saveLikedList();
-                                cout << "The movie has been removed from your liked list." << endl;
-                            } else {
-                                cout << "Invalid choice. The movie could not be removed. Please try again." << endl;
-                            }
-                        } else if (actionChoice == 5) {
-                            cout << "\nReturning to the main menu...\n" << endl;
-                            break;
-                        } else {
-                            cout << "Invalid option. Please choose again." << endl;
-                        }
-                    }
-                }
-            }
-        } 
-        else if (mainChoice == 2) {
-            showLikedList();
-        } 
-        else if (mainChoice == 3) {
-            cout << "\nExiting the program." << endl;
-            break;
-        } else {
-            cout << "Invalid option. Please try again." << endl;
+        switch (menuChoice) {
+            case 1: recommendMovie(); break;
+            case 2: showMovieList(likedMovies, "Liked Movies"); break;
+            case 3: showMovieList(watchHistory, "Watch History"); break;
+            case 4: showMovieList(watchLater, "Watch Later List"); break;
+            case 5: showBestMovie(); break;
+            case 6: cout << "Goodbye!\n"; return 0;
+            default: cout << "Invalid choice.\n";
         }
     }
 
