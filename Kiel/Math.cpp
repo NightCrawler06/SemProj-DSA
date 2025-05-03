@@ -1,146 +1,185 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include <stack>    
-#include <queue>    
+#include <stack>
+#include <queue>
 
 using namespace std;
 
 string gradeTopics[6][5] = {
-    {"Addition", "Subtraction", "Multiplication", "Counting", "Fractions"},    
-    {"Addition", "Subtraction", "Multiplication", "Division", "Place Value"},   
-    {"Multiplication", "Division", "Fractions", "Time", "Decimals"},             
-    {"Multiplication", "Division", "Fractions", "Measurement", "Geometry"},      
-    {"Long Division", "Decimals", "Fractions", "Volume", "Word Problems"},       
-    {"Ratios", "Percentages", "Algebra", "Geometry", "Data Analysis"}           
+    {"Addition", "Subtraction", "Multiplication", "Counting", "Fractions"},
+    {"Addition", "Subtraction", "Multiplication", "Division", "Place Value"},
+    {"Multiplication", "Division", "Fractions", "Time", "Decimals"},
+    {"Multiplication", "Division", "Fractions", "Measurement", "Geometry"},
+    {"Long Division", "Decimals", "Fractions", "Volume", "Word Problems"},
+    {"Ratios", "Percentages", "Algebra", "Geometry", "Data Analysis"}
 };
 
-
 void explainTopic(string topic) {
-    cout << "\n--- " << topic << " ---\n";
+    cout << "\nLet's go over: " << topic << "\n";
     if (topic == "Addition") {
-        cout << "Meaning: Adding numbers together.\n";
-        cout << "Purpose: Find the total.\n";
-        cout << "Steps: Line up numbers -> Add from right to left -> Carry over if needed.\n";
-        cout << "Example: 47 + 26 = 73\n";
-    }
-    else if (topic == "Subtraction") {
-        cout << "Meaning: Finding the difference.\n";
-        cout << "Purpose: Find what is left.\n";
-        cout << "Steps: Line up numbers -> Subtract from right to left -> Borrow if needed.\n";
-        cout << "Example: 52 - 19 = 33\n";
-    }
-    else if (topic == "Multiplication") {
-        cout << "Meaning: Repeated addition.\n";
-        cout << "Purpose: Quick total for equal groups.\n";
-        cout << "Steps: Multiply numbers directly.\n";
-        cout << "Example: 4 x 3 = 12\n";
-    }
-    else if (topic == "Division") {
-        cout << "Meaning: Splitting into equal parts.\n";
-        cout << "Purpose: To share or group.\n";
-        cout << "Steps: Divide numbers.\n";
-        cout << "Example: 12 / 3 = 4\n";
-    }
-    else if (topic == "Counting") {
-        cout << "Meaning: Listing numbers in order.\n";
-        cout << "Purpose: Know quantity.\n";
-        cout << "Steps: Start from 1 or 0, count up.\n";
-        cout << "Example: 1, 2, 3, 4, 5...\n";
-    }
-    else if (topic == "Fractions") {
-        cout << "Meaning: Part of a whole.\n";
-        cout << "Purpose: Show portions.\n";
-        cout << "Steps: Top number shows parts you have; bottom shows total parts.\n";
-        cout << "Example: 1/2 means one part out of two.\n";
+        cout << "Addition means putting numbers together.\n";
+        cout << "Examples: 5 + 3 = 8, 10 + 7 = 17, 2 + 6 = 8\n";
+    } else if (topic == "Subtraction") {
+        cout << "Subtraction means taking one number away from another.\n";
+        cout << "Examples: 9 - 4 = 5, 15 - 6 = 9, 12 - 3 = 9\n";
+    } else if (topic == "Multiplication") {
+        cout << "Multiplication is repeated addition.\n";
+        cout << "Examples: 4 * 3 = 12, 2 * 5 = 10, 6 * 2 = 12\n";
+    } else if (topic == "Division") {
+        cout << "Division is splitting into equal parts.\n";
+        cout << "Examples: 8 / 2 = 4, 12 / 3 = 4, 20 / 5 = 4\n";
+    } else {
+        cout << "This topic is interesting, but we don't have examples for it yet.\n";
     }
 }
 
+string giveHint(string topic) {
+    if (topic == "Addition") return "Hint: Try using your fingers or a number line.";
+    if (topic == "Subtraction") return "Hint: Think about what's left after taking away.";
+    if (topic == "Multiplication") return "Hint: Try repeated addition.";
+    if (topic == "Division") return "Hint: Think of equal sharing.";
+    return "Hint: Think it through step by step.";
+}
 
-void generateQuiz(string topic, queue<string>& questions, stack<string>& answers) {
-    srand(time(0));
-    for (int i = 0; i < 3; i++) {
-        int a = rand() % 10 + 1;
-        int b = rand() % 10 + 1;
+int generateQuestion(string topic, string &question) {
+    int a = rand() % 10 + 1;
+    int b = rand() % 10 + 1;
+    int answer = 0;
 
-        if (topic == "Addition") {
-            questions.push("What is " + to_string(a) + " + " + to_string(b) + "?");
-            answers.push(to_string(a + b));
+    if (topic == "Addition") {
+        answer = a + b;
+        question = "What is " + to_string(a) + " + " + to_string(b) + "?";
+    } else if (topic == "Subtraction") {
+        if (a < b) swap(a, b);
+        answer = a - b;
+        question = "What is " + to_string(a) + " - " + to_string(b) + "?";
+    } else if (topic == "Multiplication") {
+        answer = a * b;
+        question = "What is " + to_string(a) + " * " + to_string(b) + "?";
+    } else if (topic == "Division") {
+        int result = (rand() % 10) + 1;
+        b = (rand() % 9) + 1;
+        a = result * b;
+        answer = result;
+        question = "What is " + to_string(a) + " / " + to_string(b) + "?";
+    }
+    return answer;
+}
+
+void runQuiz(string selectedTopic, string name) {
+    int score = 0;
+    string question, userAnswer;
+    int correctAnswer;
+    queue<string> wrongQuestions, correctAnswers, userWrongAnswers;
+
+    for (int i = 1; i <= 10; i++) {
+        correctAnswer = generateQuestion(selectedTopic, question);
+        cout << "\n" << i << ". " << question << "\nYour answer: ";
+        cin >> userAnswer;
+
+        if (userAnswer == to_string(correctAnswer)) {
+            cout << "Correct!\n";
+            score++;
+            continue;
         }
-        else if (topic == "Subtraction") {
-            if (a < b) swap(a, b);
-            questions.push("What is " + to_string(a) + " - " + to_string(b) + "?");
-            answers.push(to_string(a - b));
+
+        cout << "Not quite.\n" << giveHint(selectedTopic) << "\nTry again: ";
+        cin >> userAnswer;
+
+        if (userAnswer == to_string(correctAnswer)) {
+            cout << "Good job, you got it on the second try!\n";
+            score++;
+        } else {
+            cout << "That's still not right. The correct answer was: " << correctAnswer << "\n";
+            wrongQuestions.push(question);
+            correctAnswers.push(to_string(correctAnswer));
+            userWrongAnswers.push(userAnswer);
         }
-        else if (topic == "Multiplication") {
-            questions.push("What is " + to_string(a) + " * " + to_string(b) + "?");
-            answers.push(to_string(a * b));
-        }
-        else if (topic == "Division") {
-            int result = (rand() % 10) + 1;
-            a = result * b;
-            questions.push("What is " + to_string(a) + " / " + to_string(b) + "?");
-            answers.push(to_string(result));
+    }
+
+    cout << "\nQuiz Complete, " << name << ".\n";
+    cout << "Your score: " << score << "/10\n";
+
+    if (!wrongQuestions.empty()) {
+        cout << "\nHere are the questions you missed:\n";
+        while (!wrongQuestions.empty()) {
+            cout << wrongQuestions.front() << "\n";
+            cout << "Your answer: " << userWrongAnswers.front()
+                 << " | Correct answer: " << correctAnswers.front() << "\n\n";
+            wrongQuestions.pop();
+            correctAnswers.pop();
+            userWrongAnswers.pop();
         }
     }
 }
 
 int main() {
+    srand(time(0));
     int grade, choice;
-    char takeQuiz;
+    string name;
 
-    cout << "Welcome to Beginner Math Tutor!\n";
-    cout << "Enter your grade (1-6): ";
+    // Introduction
+    cout << "Welcome to your personal Math Tutor Bot.\n";
+    cout << "I'm here to help you review math topics and practice with quizzes.\n";
+    cout << "Before we begin, what's your name? ";
+    cin >> name;
+
+    cout << "\nGreat to meet you, " << name << ". What grade are you in? (1-6): ";
     cin >> grade;
 
     if (grade < 1 || grade > 6) {
-        cout << "Invalid grade.\n";
+        cout << "That doesn't seem like a valid grade. Please restart and enter 1 to 6.\n";
         return 0;
     }
 
-    cout << "\nAvailable Topics:\n";
-    for (int i = 0; i < 5; i++) {
-        cout << i + 1 << ". " << gradeTopics[grade - 1][i] << endl;
-    }
+    while (true) {
+        cout << "\nHere are the topics available for grade " << grade << ":\n";
+        for (int i = 0; i < 5; i++) {
+            cout << i + 1 << ". " << gradeTopics[grade - 1][i] << "\n";
+        }
 
-    cout << "Choose a topic number: ";
-    cin >> choice;
+        cout << "\n" << name << ", what would you like to do?\n";
+        cout << "1. Review a topic\n";
+        cout << "2. Take a quiz\n";
+        cout << "3. Exit\n";
+        cout << "Enter your choice (1-3): ";
 
-    if (choice < 1 || choice > 5) {
-        cout << "Invalid topic choice.\n";
-        return 0;
-    }
+        int action;
+        cin >> action;
 
-    string selectedTopic = gradeTopics[grade - 1][choice - 1];
+        if (action == 3) {
+            cout << "\nThanks for learning with me today, " << name << ". Keep practicing and see you next time!\n";
+            break;
+        }
 
-    explainTopic(selectedTopic);
+        if (action != 1 && action != 2) {
+            cout << "Invalid option. Please choose 1, 2, or 3.\n";
+            continue;
+        }
 
-    cout << "\nDo you want a short quiz? (y/n): ";
-    cin >> takeQuiz;
+        cout << "Choose a topic number (1-5): ";
+        cin >> choice;
+        if (choice < 1 || choice > 5) {
+            cout << "That topic number is not available. Please choose from 1 to 5.\n";
+            continue;
+        }
 
-    if (takeQuiz == 'y' || takeQuiz == 'Y') {
-        queue<string> questions;
-        stack<string> answers;
+        string selectedTopic = gradeTopics[grade - 1][choice - 1];
 
-        generateQuiz(selectedTopic, questions, answers);
-
-        while (!questions.empty()) {
-            cout << questions.front() << endl;
-            cout << "Your answer: ";
-            string userAnswer;
-            cin >> userAnswer;
-
-            if (userAnswer == answers.top()) {
-                cout << "Correct!\n";
+        if (action == 1) {
+            explainTopic(selectedTopic);
+        } else if (action == 2) {
+            string confirm;
+            cout << "Are you ready to take a quiz on " << selectedTopic << "? (yes/no): ";
+            cin >> confirm;
+            if (confirm == "yes") {
+                runQuiz(selectedTopic, name);
             } else {
-                cout << "Wrong. Correct answer: " << answers.top() << endl;
+                cout << "No problem! You can come back to the quiz anytime.\n";
             }
-
-            questions.pop();
-            answers.pop();
         }
     }
 
-    cout << "\nThank you for using Beginner Math Tutor!\n";
     return 0;
 }
