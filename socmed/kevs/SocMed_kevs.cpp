@@ -67,12 +67,12 @@ class SocialMedia {
         for (const string& name : defaultUserNames)
             userList.push_back(User(name));
     
-        // Helper to get pointer by name
+        
         auto get = [&](const string& name) -> User* {
             return getUserByName(name);
         };
     
-        // Assign friendships
+        
         get("kieven")->friends = {"euel", "jerome", "dexter"};
         get("euel")->friends = {"kieven", "gianne", "mark"};
         get("jerome")->friends = {"kieven", "nelson", "ezequel"};
@@ -98,9 +98,9 @@ class SocialMedia {
         get("kevs")->favoriteMusic = {"rock", "lofi"};
         get("kevs")->favoriteSports = {"basketball"};
     
-        get("euel")->likes = {"coding", "anime"};
-        get("euel")->favoriteMusic = {"pop"};
-        get("euel")->favoriteSports = {"chess", "badminton"};
+        get("jirom")->likes = {"coding", "anime"};
+        get("jirom")->favoriteMusic = {"pop"};
+        get("jirom")->favoriteSports = {"chess", "badminton"};
     
         get("dex")->likes = {"anime", "meme"};
         get("dex")->favoriteMusic = {"rap"};
@@ -150,10 +150,49 @@ public:
     }
 
     void viewProfile() {
-        User* user = getUserByName(currentLoggedInUser);
-        cout << "\nProfile: " << user->name << "\n";
-        cout << "Description: " << user->description << "\n";
+        User* currentUser = getUserByName(currentLoggedInUser);
+        if (!currentUser) return;
+    
+        cout << "\nEnter username to view (or type 'me' for your own): ";
+        string target;
+        cin >> target;
+        target = toLower(target);
+    
+        User* viewed = (target == "me") ? currentUser : getUserByName(target);
+    
+        if (!viewed) {
+            cout << "User not found.\n";
+            return;
+        }
+    
+        cout << "\n--- Viewing Profile: " << viewed->name << " ---\n";
+        cout << "Description: " << viewed->description << "\n";
+    
+        // Show likes, music, sports
+        auto showList = [](const vector<string>& items, const string& label) {
+            cout << label << ": ";
+            if (items.empty()) {
+                cout << "None\n";
+            } else {
+                for (const string& item : items) cout << item << " ";
+                cout << "\n";
+            }
+        };
+    
+        showList(viewed->likes, "Likes");
+        showList(viewed->favoriteMusic, "Favorite Music");
+        showList(viewed->favoriteSports, "Favorite Sports");
+    
+        // Show friends
+        cout << "Friends:\n";
+        if (viewed->friends.empty()) {
+            cout << "  No friends yet.\n";
+        } else {
+            for (const string& f : viewed->friends)
+                cout << "  - " << f << "\n";
+        }
     }
+    
 
     void setDescription() {
         User* user = getUserByName(currentLoggedInUser);
@@ -300,7 +339,7 @@ public:
     
         bool found = false;
         for (User& user : userList) {
-            if (user.name == currentUser->name) continue; // skip self
+            if (user.name == currentUser->name) continue; 
     
             string loweredName = toLower(user.name);
             if (loweredName.find(searchName) != string::npos) {
@@ -325,6 +364,16 @@ public:
                         hasLikes = true;
                     }
                 }
+                if (!hasLikes) {
+                    cout << "    None\n";
+                    if (!user.likes.empty()) {
+                        cout << "  Their Likes:\n";
+                        for (const string& like : user.likes) {
+                            cout << "    * " << like << "\n";
+                        }
+                    }
+                }
+
                 if (!hasLikes) cout << "    None\n";
     
                 cout << "  Shared Music:\n";
@@ -335,6 +384,16 @@ public:
                         hasMusic = true;
                     }
                 }
+                if (!hasMusic) {
+                    cout << "    None\n";
+                    if (!user.favoriteMusic.empty()) {
+                        cout << "  Their Music:\n";
+                        for (const string& music : user.favoriteMusic) {
+                            cout << "    * " << music << "\n";
+                        }
+                    }
+                }
+                
                 if (!hasMusic) cout << "    None\n";
     
                 cout << "  Shared Sports:\n";
@@ -345,6 +404,16 @@ public:
                         hasSports = true;
                     }
                 }
+                if (!hasSports) {
+                    cout << "    None\n";
+                    if (!user.favoriteSports.empty()) {
+                        cout << "  Their Sports:\n";
+                        for (const string& sport : user.favoriteSports) {
+                            cout << "    * " << sport << "\n";
+                        }
+                    }
+                }
+                
                 if (!hasSports) cout << "    None\n";
             }
         }

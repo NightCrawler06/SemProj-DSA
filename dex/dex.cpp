@@ -3,6 +3,9 @@
 #include <limits>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -21,6 +24,28 @@ bool isAlphabetic(const string& str) {
 bool isYesOrNo(const string& input) {
     string lower = toLower(input);
     return (lower == "yes" || lower == "no");
+}
+
+void showCollection() {
+    ifstream inFile("collection.txt");
+    if (!inFile) {
+        cout << "No saved collection found.\n";
+        return;
+    }
+
+    cout << "\n--- Saved Fashion Collection ---\n";
+    string line;
+    while (getline(inFile, line)) {
+        cout << line << endl;
+    }
+    cout << "--------------------------------\n";
+    inFile.close();
+}
+
+void clearCollection() {
+    ofstream outFile("collection.txt", ios::trunc);
+    outFile.close();
+    cout << "Saved collection has been cleared.\n";
 }
 
 int main() {
@@ -48,7 +73,7 @@ int main() {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
         } else {
-            cin.ignore(); 
+            cin.ignore();
             break;
         }
     }
@@ -118,7 +143,65 @@ int main() {
     }
 
     cout << "--------------------------------------------------\n";
-    cout << "Thank you for using the Fashion Tips Chatbot!\n";
+
+    string menuChoice;
+    do {
+        cout << "\nWhat would you like to do next?\n";
+        cout << "1. Save this suggestion to your collection\n";
+        cout << "2. View saved collection\n";
+        cout << "3. Clear saved collection\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice (1-4): ";
+        getline(cin, menuChoice);
+
+        if (menuChoice == "1") {
+            ofstream outFile("collection.txt", ios::app);
+            if (outFile.is_open()) {
+                outFile << "--------------------------------------------------\n";
+                outFile << "Fashion Suggestion:\n";
+                outFile << "For a " << age << "-year-old " << gender << " from " << region
+                        << " who prefers a " << style << " style";
+                if (toLower(native) == "yes") {
+                    outFile << " and is a native of the area";
+                }
+                outFile << ", preparing for " << season << ":\n";
+
+                if (seasonLower == "winter" || seasonLower == "cold") {
+                    outFile << "- Layered clothing: thick jackets, hoodies, or coats.\n";
+                    outFile << "- Warm tones: navy, maroon, dark green.\n";
+                    outFile << "- Accessories like scarves and boots.\n";
+                } else if (seasonLower == "summer") {
+                    outFile << "- Lightweight fabrics like cotton or linen.\n";
+                    outFile << "- Light colors: white, pastel blue, beige.\n";
+                    outFile << "- Sneakers or sandals.\n";
+                } else if (seasonLower == "wedding" || seasonLower == "formal event") {
+                    outFile << "- Formal wear: dresses or suits.\n";
+                    outFile << "- Elegant tones: black, navy, cream.\n";
+                    outFile << "- Minimal accessories.\n";
+                } else {
+                    outFile << "- Personal style with thoughtful layering.\n";
+                    outFile << "- Colors like olive + white or black + denim.\n";
+                    outFile << "- Confidence and comfort first.\n";
+                }
+
+                outFile << "--------------------------------------------------\n\n";
+                outFile.close();
+                cout << "Fashion suggestion added to your collection.\n";
+            } else {
+                cout << "Error saving the suggestion.\n";
+            }
+
+        } else if (menuChoice == "2") {
+            showCollection();
+        } else if (menuChoice == "3") {
+            clearCollection();
+        } else if (menuChoice == "4") {
+            cout << "Goodbye!\n";
+        } else {
+            cout << "Invalid choice. Please enter 1-4.\n";
+        }
+
+    } while (menuChoice != "4");
 
     return 0;
 }

@@ -155,6 +155,8 @@ void recommendMovie(const string& genreName) {
         return;
     }
 
+    chatbotSay("Let me look through some great " + genreName + " movies for you...");
+
     int index = 0;
     while (true) {
         int shown = 0;
@@ -162,10 +164,10 @@ void recommendMovie(const string& genreName) {
             const Movie& m = (*genreList)[index];
             if (isInList(watchHistory, m) || isInList(likedMovies, m)) continue;
 
-            cout << "\nHere's a suggestion:\n";
+            chatbotSay("How about this one?");
             displayMovie(m);
 
-            cout << "\nHave you watched it? (y/n): ";
+            chatbotSay("Have you seen this movie before? (y/n): ");
             char seen;
             cin >> seen;
             cin.ignore();
@@ -184,7 +186,8 @@ void recommendMovie(const string& genreName) {
                     saveData();
                 }
             } else {
-                cout << "Want to save it for later? (y/n): ";
+                chatbotSay("Want me to add this to your Watch Later list? (y/n): ");
+
                 char later;
                 cin >> later;
                 cin.ignore();
@@ -248,7 +251,7 @@ void showBestMovie() {
         return;
     }
 
-    cout << "\nYour highest-rated movie so far:\n";
+    chatbotSay("Here's the best-rated movie you've liked or watched!");
     displayMovie(best);
 }
 
@@ -269,8 +272,16 @@ void loadData() {
     load("later.txt", watchLater);
 }
 
+void chatbotSay(const string& message) {
+    cout << "[Bot] " << message << endl;
+}
+
+
+
 int main() {
-    cout << "Welcome to your Movie Chatbot!\n";
+    chatbotSay("Hi there! I'm your movie buddy.");
+    chatbotSay("I can recommend awesome films, save what you like, and help you keep track.");
+
     loadData();
 
     string input;
@@ -302,11 +313,11 @@ int main() {
             size_t fromPos = input.find("from");
         
             if (fromPos == string::npos || fromPos <= removePos) {
-                cout << "⚠️ Invalid remove format. Use: remove [title] from [liked/history/later]\n";
+                cout << "Invalid remove format. Use: remove [title] from [liked/history/later]\n";
             } else {
                 string rawTitle = input.substr(removePos, fromPos - removePos);
                 string listName = input.substr(fromPos + 5); // after "from "
-        
+
 
                 auto trim = [](string& s) {
                     s.erase(0, s.find_first_not_of(" \t"));
@@ -318,14 +329,14 @@ int main() {
                 if (listName == "liked") removeMovieFromList(likedMovies, rawTitle);
                 else if (listName == "history") removeMovieFromList(watchHistory, rawTitle);
                 else if (listName == "later") removeMovieFromList(watchLater, rawTitle);
-                else cout << "⚠️ List name should be liked, history, or later.\n";
+                else cout << "List name should be liked, history, or later.\n";
             }
         } else if (input == "exit" || input == "quit") {
             saveData();
             cout << "Thanks for using the chatbot! Your data has been saved.\n";
             break;
         } else if (input == "help") {
-            cout << "\nHere's what you can do:\n";
+            chatbotSay("Need a hand? Here's what I can help you with:");
             cout << "- recommend [genre] : Get up to 3 movie suggestions (e.g., recommend action)\n";
             cout << "- show liked        : View your liked movies\n";
             cout << "- show history      : See what you've watched\n";

@@ -1,14 +1,12 @@
 # Login System by Night
-username = ["Night", "Euel"]
-password = ["010106"]
-
 users = {
-    {"Night": "Test0101"},
+    "Night": "Test0101",
+    "Euel" : "euel2006"
 }
 
 
 def login(uname, pword):
-    if uname in username and pword in password:
+    if uname in users and users[uname] == pword:
         print("\nLogin Success")
         return True
     else:
@@ -16,7 +14,7 @@ def login(uname, pword):
         return False
 
 def main():
-    print("=== Please Login ===\n")
+    print("Please Login\n")
     
 
     while True:
