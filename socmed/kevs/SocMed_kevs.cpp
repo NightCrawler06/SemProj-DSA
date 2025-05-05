@@ -58,11 +58,64 @@ class SocialMedia {
 
     void addInitialUsers() {
         vector<string> defaultUserNames = {
-            "kevs", "dex", "franc", "amira", "raisen", "lee"
+            "kieven", "euel", "jerome", "dexter", "ezequel",
+            "gianne", "mark", "nelson", "buboy", "bubski",
+            "anas", "jirom", "kevs", "dex", "franc", "kiel",
+            "amira", "raisen", "lee", "julius"
         };
-        for (string name : defaultUserNames)
+    
+        for (const string& name : defaultUserNames)
             userList.push_back(User(name));
+    
+        // Helper to get pointer by name
+        auto get = [&](const string& name) -> User* {
+            return getUserByName(name);
+        };
+    
+        // Assign friendships
+        get("kieven")->friends = {"euel", "jerome", "dexter"};
+        get("euel")->friends = {"kieven", "gianne", "mark"};
+        get("jerome")->friends = {"kieven", "nelson", "ezequel"};
+        get("dexter")->friends = {"kieven", "anas", "dex"};
+        get("ezequel")->friends = {"jerome", "gianne", "buboy"};
+        get("gianne")->friends = {"euel", "ezequel", "bubski"};
+        get("mark")->friends = {"euel", "jirom", "kevs"};
+        get("nelson")->friends = {"jerome", "kevs", "franc"};
+        get("buboy")->friends = {"ezequel", "kiel", "lee"};
+        get("bubski")->friends = {"gianne", "amira", "raisen"};
+        get("anas")->friends = {"dexter", "julius"};
+        get("jirom")->friends = {"mark", "dex", "kiel"};
+        get("kevs")->friends = {"mark", "nelson", "amira"};
+        get("dex")->friends = {"dexter", "jirom", "franc"};
+        get("franc")->friends = {"nelson", "dex", "lee"};
+        get("kiel")->friends = {"buboy", "jirom", "julius"};
+        get("amira")->friends = {"bubski", "kevs", "raisen"};
+        get("raisen")->friends = {"bubski", "amira", "lee"};
+        get("lee")->friends = {"buboy", "franc", "raisen"};
+        get("julius")->friends = {"anas", "kiel"};
+    
+        get("kevs")->likes = {"gaming", "meme"};
+        get("kevs")->favoriteMusic = {"rock", "lofi"};
+        get("kevs")->favoriteSports = {"basketball"};
+    
+        get("euel")->likes = {"coding", "anime"};
+        get("euel")->favoriteMusic = {"pop"};
+        get("euel")->favoriteSports = {"chess", "badminton"};
+    
+        get("dex")->likes = {"anime", "meme"};
+        get("dex")->favoriteMusic = {"rap"};
+        get("dex")->favoriteSports = {"basketball"};
+    
+        get("franc")->likes = {"gaming", "coding"};
+        get("franc")->favoriteMusic = {"lofi"};
+        get("franc")->favoriteSports = {"badminton"};
+    
+        get("amira")->likes = {"art", "reading"};
+        get("amira")->favoriteMusic = {"classical"};
+        get("amira")->favoriteSports = {"volleyball"};
+    
     }
+    
 
 public:
     SocialMedia() {
@@ -237,16 +290,70 @@ public:
         cout << "Enter name to search: ";
         string searchName;
         cin >> searchName;
-
+        searchName = toLower(searchName);
+    
+        User* currentUser = getUserByName(currentLoggedInUser);
+        if (!currentUser) {
+            cout << "No user is currently logged in.\n";
+            return;
+        }
+    
         bool found = false;
         for (User& user : userList) {
-            if (user.name.find(searchName) != string::npos) {
-                cout << "- " << user.name << "\n";
+            if (user.name == currentUser->name) continue; // skip self
+    
+            string loweredName = toLower(user.name);
+            if (loweredName.find(searchName) != string::npos) {
                 found = true;
+                cout << "\nFound: " << user.name << "\n";
+    
+                cout << "  Mutual Friends:\n";
+                bool hasMutual = false;
+                for (const string& f : currentUser->friends) {
+                    if (user.isFriend(f)) {
+                        cout << "    - " << f << "\n";
+                        hasMutual = true;
+                    }
+                }
+                if (!hasMutual) cout << "    None\n";
+    
+                cout << "  Shared Likes:\n";
+                bool hasLikes = false;
+                for (const string& like : currentUser->likes) {
+                    if (find(user.likes.begin(), user.likes.end(), like) != user.likes.end()) {
+                        cout << "    - " << like << "\n";
+                        hasLikes = true;
+                    }
+                }
+                if (!hasLikes) cout << "    None\n";
+    
+                cout << "  Shared Music:\n";
+                bool hasMusic = false;
+                for (const string& music : currentUser->favoriteMusic) {
+                    if (find(user.favoriteMusic.begin(), user.favoriteMusic.end(), music) != user.favoriteMusic.end()) {
+                        cout << "    - " << music << "\n";
+                        hasMusic = true;
+                    }
+                }
+                if (!hasMusic) cout << "    None\n";
+    
+                cout << "  Shared Sports:\n";
+                bool hasSports = false;
+                for (const string& sport : currentUser->favoriteSports) {
+                    if (find(user.favoriteSports.begin(), user.favoriteSports.end(), sport) != user.favoriteSports.end()) {
+                        cout << "    - " << sport << "\n";
+                        hasSports = true;
+                    }
+                }
+                if (!hasSports) cout << "    None\n";
             }
         }
-        if (!found) cout << "No matching users.\n";
+    
+        if (!found) {
+            cout << "No matching users found.\n";
+        }
     }
+    
 
     void mainMenu() {
         while (true) {
@@ -258,14 +365,14 @@ public:
                 if (userChoice == 1) login();
                 else break;
             } else {
-                cout << "1. View Profile\n2. Add Friend\n3. Remove Friend\n4. Log Out\n5. Exit\nChoice: ";
+                cout << "1. View Profile\n2. Search User\n3. Add Friend\n4. Remove Friend\n5. Log Out\n6. Exit\nChoice: ";
                 int userChoice;
                 cin >> userChoice;
 
                 if (userChoice == 1) {
                     viewProfile();
                     while (true) {
-                        cout << "\n1. View Friends\n2. View Mutual Friends\n3. Edit Description\n4. Edit Likes\n5. Edit Music\n6. Edit Sports\n7. Suggest Friends\n8. Search User\n9. Back\nChoice: ";
+                        cout << "\n1. View Friends\n2. View Mutual Friends\n3. Edit Description\n4. Edit Likes\n5. Edit Music\n6. Edit Sports\n7. Suggest Friends\n8. Back\nChoice: ";
                         int subChoice;
                         cin >> subChoice;
                         if (subChoice == 1) viewFriends();
@@ -275,12 +382,12 @@ public:
                         else if (subChoice == 5) editMusic();
                         else if (subChoice == 6) editSports();
                         else if (subChoice == 7) suggestFriends();
-                        else if (subChoice == 8) searchUser();
                         else break;
                     }
-                } else if (userChoice == 2) addFriend();
-                else if (userChoice == 3) removeFriend();
-                else if (userChoice == 4) logout();
+                } else if (userChoice == 2) searchUser();
+                else if (userChoice == 3) addFriend();
+                else if (userChoice == 4) removeFriend();
+                else if (userChoice == 5) logout();
                 else break;
             }
         }

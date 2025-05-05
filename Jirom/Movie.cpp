@@ -1,6 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <cctype>
 using namespace std;
 
 struct Movie {
@@ -9,7 +12,6 @@ struct Movie {
     float rating;
     string description;
 };
-
 
 vector<Movie> actionMovies = {
     {"Mad Max: Fury Road", "Action", 8.1, "In a post-apocalyptic wasteland, Max teams up with Furiosa to escape a tyrannical warlord."},
@@ -99,126 +101,242 @@ vector<Movie> sciFiMovies = {
 };
 
 
+
 vector<Movie> likedMovies;
 vector<Movie> watchHistory;
 vector<Movie> watchLater;
 
-vector<Movie>* getGenreList(int choice) {
-    switch (choice) {
-        case 1: return &actionMovies;
-        case 2: return &dramaMovies;
-        case 3: return &comedyMovies;
-        case 4: return &horrorMovies;
-        case 5: return &sciFiMovies;
-        default: return nullptr;
-    }
+vector<Movie>* getGenreListByName(const string& genre) {
+    if (genre == "action") return &actionMovies;
+    if (genre == "drama") return &dramaMovies;
+    if (genre == "comedy") return &comedyMovies;
+    if (genre == "horror") return &horrorMovies;
+    if (genre == "sci-fi" || genre == "scifi") return &sciFiMovies;
+    return nullptr;
 }
+
+bool isInList(const vector<Movie>& list, const Movie& movie) {
+    return any_of(list.begin(), list.end(), [&](const Movie& m) {
+        return m.title == movie.title;
+    });
+}
+
+
+
+void saveData() {
+    ofstream liked("liked.txt"), history("history.txt"), later("later.txt");
+    for (const auto& m : likedMovies) liked << m.title << '\n';
+    for (const auto& m : watchHistory) history << m.title << '\n';
+    for (const auto& m : watchLater) later << m.title << '\n';
+}
+
 
 void displayMovie(const Movie& m) {
     cout << "Title: " << m.title << "\nGenre: " << m.genre
          << "\nRating: " << m.rating << "\nDescription: " << m.description << "\n";
 }
 
-void showMovieList(const vector<Movie>& list, string header) {
+void showMovieList(const vector<Movie>& list, const string& header) {
+    cout << "\nHere are your " << header << ":\n";
     if (list.empty()) {
-        cout << "No movies in " << header << ".\n";
+        cout << "This list is currently empty.\n";
         return;
     }
-    cout << "\n--- " << header << " ---\n";
     for (const Movie& m : list) {
         displayMovie(m);
-        cout << "-------------------\n";
+        cout << "--------------------------\n";
     }
 }
 
-void recommendMovie() {
-    cout << "Choose a genre:\n";
-    cout << "1. Action\n2. Drama\n3. Comedy\n4. Horror\n5. Sci-Fi\nChoice: ";
-    int choice;
-    cin >> choice;
-
-    vector<Movie>* genreList = getGenreList(choice);
-    if (!genreList || genreList->empty()) {
-        cout << "Invalid genre.\n";
+void recommendMovie(const string& genreName) {
+    vector<Movie>* genreList = getGenreListByName(genreName);
+    if (!genreList) {
+        cout << "I couldn't recognize that genre. Try: action, drama, comedy, horror, or sci-fi.\n";
         return;
     }
 
-    for (Movie& m : *genreList) {
-        cout << "\nRecommended Movie:\n";
-        displayMovie(m);
+    int index = 0;
+    while (true) {
+        int shown = 0;
+        for (; index < genreList->size() && shown < 3; ++index) {
+            const Movie& m = (*genreList)[index];
+            if (isInList(watchHistory, m) || isInList(likedMovies, m)) continue;
 
-        cout << "Have you watched this? (y/n): ";
-        char seen;
-        cin >> seen;
+            cout << "\nHere's a suggestion:\n";
+            displayMovie(m);
 
-        if (seen == 'y' || seen == 'Y') {
-            watchHistory.push_back(m);
-            cout << "Added to Watch History.\n";
+            cout << "\nHave you watched it? (y/n): ";
+            char seen;
+            cin >> seen;
+            cin.ignore();
 
-            cout << "Did you like it? (y/n): ";
-            char liked;
-            cin >> liked;
-            if (liked == 'y' || liked == 'Y') {
-                likedMovies.push_back(m);
-                cout << "Added to Liked Movies.\n";
+            if (seen == 'y') {
+                if (!isInList(watchHistory, m)) watchHistory.push_back(m);
+                cout << "Added to your watch history.\n";
+                saveData();
+                cout << "Did you enjoy it? (y/n): ";
+                char liked;
+                cin >> liked;
+                cin.ignore();
+                if (liked == 'y' && !isInList(likedMovies, m)) {
+                    likedMovies.push_back(m);
+                    cout << "Added to your liked movies.\n";
+                    saveData();
+                }
+            } else {
+                cout << "Want to save it for later? (y/n): ";
+                char later;
+                cin >> later;
+                cin.ignore();
+                if (later == 'y' && !isInList(watchLater, m)) {
+                    watchLater.push_back(m);
+                    cout << "Added to your watch later list.\n";
+                    saveData();
+                }
             }
-            break;
-        } else {
-            cout << "Add to Watch Later? (y/n): ";
-            char later;
-            cin >> later;
-            if (later == 'y' || later == 'Y') {
-                watchLater.push_back(m);
-                cout << "Added to Watch Later list.\n";
-            }
+
+            shown++;
+        }
+
+        if (shown == 0) {
+            cout << "\nLooks like you've seen or saved all the movies in this genre.\n";
             break;
         }
+
+        cout << "\nWould you like to see 3 more suggestions? (y/n): ";
+        char again;
+        cin >> again;
+        cin.ignore();
+        if (again != 'y') break;
     }
 }
 
+
+string toLower(const string& s) {
+    string result = s;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+
+void removeMovieFromList(vector<Movie>& list, const string& title) {
+    string loweredTitle = toLower(title);
+
+    auto it = remove_if(list.begin(), list.end(), [&](const Movie& m) {
+        return toLower(m.title) == loweredTitle;
+    });
+
+    if (it != list.end()) {
+        list.erase(it, list.end());
+        cout << "Removed \"" << title << "\" from the list.\n";
+        saveData(); 
+    } else {
+        cout << "Couldn't find \"" << title << "\" in that list.\n";
+    }
+}
+
+
+
 void showBestMovie() {
-    if (likedMovies.empty() && watchHistory.empty()) {
-        cout << "You haven't liked or watched any movies yet.\n";
+    Movie best = {"", "", 0.0, ""};
+    for (const Movie& m : likedMovies)
+        if (m.rating > best.rating) best = m;
+    for (const Movie& m : watchHistory)
+        if (m.rating > best.rating) best = m;
+
+    if (best.title.empty()) {
+        cout << "You haven't watched or liked any movies yet.\n";
         return;
     }
 
-    Movie best = {"", "", 0.0, ""};
-
-    for (const Movie& m : likedMovies)
-        if (m.rating > best.rating)
-            best = m;
-
-    for (const Movie& m : watchHistory)
-        if (m.rating > best.rating)
-            best = m;
-
-    cout << "\nBest Movie You've Seen:\n";
+    cout << "\nYour highest-rated movie so far:\n";
     displayMovie(best);
 }
 
-int main() {
-    while (true) {
-        cout << "\n=== Movie Recommender Menu ===\n";
-        cout << "1. Recommend Movie\n";
-        cout << "2. View Liked Movies\n";
-        cout << "3. View Watch History\n";
-        cout << "4. View Watch Later List\n";
-        cout << "5. Show Best Movie\n";
-        cout << "6. Exit\n";
-        cout << "Enter your choice: ";
-
-        int menuChoice;
-        cin >> menuChoice;
-
-        switch (menuChoice) {
-            case 1: recommendMovie(); break;
-            case 2: showMovieList(likedMovies, "Liked Movies"); break;
-            case 3: showMovieList(watchHistory, "Watch History"); break;
-            case 4: showMovieList(watchLater, "Watch Later List"); break;
-            case 5: showBestMovie(); break;
-            case 6: cout << "Goodbye!\n"; return 0;
-            default: cout << "Invalid choice.\n";
+void loadData() {
+    auto load = [](const string& filename, vector<Movie>& list) {
+        ifstream file(filename);
+        string line;
+        while (getline(file, line)) {
+            for (auto& group : {actionMovies, dramaMovies, comedyMovies, horrorMovies, sciFiMovies}) {
+                for (auto& m : group) {
+                    if (m.title == line) list.push_back(m);
+                }
+            }
         }
+    };
+    load("liked.txt", likedMovies);
+    load("history.txt", watchHistory);
+    load("later.txt", watchLater);
+}
+
+int main() {
+    cout << "Welcome to your Movie Chatbot!\n";
+    loadData();
+
+    string input;
+    while (true) {
+        cout << "\nWhat would you like to do?\n";
+        cout << "Type 'help' to see available commands.\n";
+        cout << "Your input: ";
+        getline(cin, input);
+        transform(input.begin(), input.end(), input.begin(), ::tolower);
+
+        if (input.find("recommend") != string::npos || input.find("i want") != string::npos) {
+            for (string g : {"action", "drama", "comedy", "horror", "sci-fi", "scifi"}) {
+                if (input.find(g) != string::npos) {
+                    recommendMovie(g);
+                    goto skip;
+                }
+            }
+            cout << "Please specify a genre like action, drama, horror, comedy, or sci-fi.\n";
+        } else if (input.find("show liked") != string::npos) {
+            showMovieList(likedMovies, "Liked Movies");
+        } else if (input.find("show history") != string::npos) {
+            showMovieList(watchHistory, "Watch History");
+        } else if (input.find("show later") != string::npos) {
+            showMovieList(watchLater, "Watch Later");
+        } else if (input.find("best movie") != string::npos || input.find("show best") != string::npos) {
+            showBestMovie();
+        } else if (input.find("remove") != string::npos && input.find("from") != string::npos) {
+            size_t removePos = input.find("remove") + 6;
+            size_t fromPos = input.find("from");
+        
+            if (fromPos == string::npos || fromPos <= removePos) {
+                cout << "⚠️ Invalid remove format. Use: remove [title] from [liked/history/later]\n";
+            } else {
+                string rawTitle = input.substr(removePos, fromPos - removePos);
+                string listName = input.substr(fromPos + 5); // after "from "
+        
+
+                auto trim = [](string& s) {
+                    s.erase(0, s.find_first_not_of(" \t"));
+                    s.erase(s.find_last_not_of(" \t") + 1);
+                };
+                trim(rawTitle);
+                trim(listName);
+        
+                if (listName == "liked") removeMovieFromList(likedMovies, rawTitle);
+                else if (listName == "history") removeMovieFromList(watchHistory, rawTitle);
+                else if (listName == "later") removeMovieFromList(watchLater, rawTitle);
+                else cout << "⚠️ List name should be liked, history, or later.\n";
+            }
+        } else if (input == "exit" || input == "quit") {
+            saveData();
+            cout << "Thanks for using the chatbot! Your data has been saved.\n";
+            break;
+        } else if (input == "help") {
+            cout << "\nHere's what you can do:\n";
+            cout << "- recommend [genre] : Get up to 3 movie suggestions (e.g., recommend action)\n";
+            cout << "- show liked        : View your liked movies\n";
+            cout << "- show history      : See what you've watched\n";
+            cout << "- show later        : View your Watch Later list\n";
+            cout << "- remove [title] from [liked/history/later] : Remove a movie from a list\n";
+            cout << "- best movie        : Show the highest-rated movie you've liked or watched\n";
+            cout << "- exit              : Save your progress and leave the chatbot\n";
+        } else {
+            cout << "Sorry, I didn't get that. Try something like 'recommend comedy'.\n";
+        }
+    skip:;
     }
 
     return 0;
