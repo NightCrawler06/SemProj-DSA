@@ -21,12 +21,6 @@ struct BudgetUser {
     vector<BudgetEntry> wants;
 };
 
-string months[] = {
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-};
-int monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
 void pause() {
     cout << "Press Enter to continue...\n";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -105,6 +99,17 @@ void showSummary(const BudgetUser& user, int monthDays) {
     cout << "Wants % of Income  : " << percentWants << "%\n";
     cout << "============================================\n";
 
+    cout << "\n--- DAILY BREAKDOWN (Estimated) ---\n";
+    vector<double> dailyTotals(monthDays, 0.0);
+    for (int d = 0; d < monthDays; ++d) {
+        for (const auto& n : user.needs)
+            dailyTotals[d] += n.amount / monthDays;
+        for (const auto& w : user.wants)
+            dailyTotals[d] += w.amount / monthDays;
+        cout << "Day " << (d + 1) << ": PHP " << fixed << setprecision(2) << dailyTotals[d] << "\n";
+    }
+
+    //mag s save lng to sa file
     string filename = "summary_" + user.name + ".txt";
     ofstream file(filename);
     file << "BUDGET SUMMARY FOR: " << user.name << "\n";
@@ -126,11 +131,18 @@ void showSummary(const BudgetUser& user, int monthDays) {
     file << "Total Expenses   : PHP " << totalExpenses << "\n";
     file << (remaining < 0 ? "Overspending     : PHP " : "Remaining Budget : PHP ") << abs(remaining) << "\n";
     file << "Needs % of Income: " << percentNeeds << "%\n";
-    file << "Wants % of Income: " << percentWants << "%\n";
-    file.close();
+    file << "Wants % of Income: " << percentWants << "%\n\n";
 
+    file << "[DAILY BREAKDOWN]\n";
+    for (int d = 0; d < monthDays; ++d) {
+        file << "Day " << (d + 1) << ": PHP " << dailyTotals[d] << "\n";
+    }
+
+    file.close();
     cout << "Summary saved to '" << filename << "'\n";
 }
+
+
 
 
 int main() {
@@ -139,19 +151,9 @@ int main() {
     cout << "==========================================\n\n";
 
     int numUsers = (int)inputNumber("How many users will use the planner? ");
-    string month;
-    int days;
-    while (true) {
-        month = inputText("Enter the month you are budgeting for: ");
-        for (int i = 0; i < 12; ++i) {
-            if (months[i] == month) {
-                days = monthDays[i];
-                break;
-            }
-        }
-        if (days) break;
-        cout << "Invalid month. Try again.\n";
-    }
+    int days = 31;
+    cout << "Tracking for 1 month (31 days).\n";
+    
 
     for (int i = 0; i < numUsers; ++i) {
         BudgetUser user;

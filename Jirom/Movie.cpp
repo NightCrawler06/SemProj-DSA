@@ -2,7 +2,6 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 #include <cctype>
 using namespace std;
 
@@ -148,6 +147,11 @@ void showMovieList(const vector<Movie>& list, const string& header) {
     }
 }
 
+
+void chatbotSay(const string& message) {
+    cout << "[Bot] " << message << endl;
+}
+
 void recommendMovie(const string& genreName) {
     vector<Movie>* genreList = getGenreListByName(genreName);
     if (!genreList) {
@@ -272,14 +276,12 @@ void loadData() {
     load("later.txt", watchLater);
 }
 
-void chatbotSay(const string& message) {
-    cout << "[Bot] " << message << endl;
-}
+
 
 
 
 int main() {
-    chatbotSay("Hi there! I'm your movie buddy.");
+    chatbotSay("Hi there! I'm your buddy Movibot.");
     chatbotSay("I can recommend awesome films, save what you like, and help you keep track.");
 
     loadData();

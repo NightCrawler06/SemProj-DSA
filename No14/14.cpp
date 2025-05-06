@@ -11,31 +11,20 @@ struct User {
     double dailyIncome;
     double weeklyIncome;
     double monthlyIncome;
-    double totalExpenses;
-    double totalSavings;
-    double totalNeeds;
-    double totalWants;
-    double totalDebt;
-    double totalInvestments;
-    vector<pair<string, double>> needs;  // para ma store und needs at ung expenses
-    vector<pair<string, double>> wants;  // para ma store und wants at ung expenses
+    double totalExpenses = 0;
+    double totalSavings = 0;
+    double totalNeeds = 0;
+    double totalWants = 0;
+    double totalDebt = 0;
+    double totalInvestments = 0;
+    vector<pair<string, double>> needs;
+    vector<pair<string, double>> wants;
 };
 
-
-
 map<string, int> monthsDays = {
-    {"January", 31},
-    {"February", 28},
-    {"March", 31},
-    {"April", 30},
-    {"May", 31},
-    {"June", 30},
-    {"July", 31},
-    {"August", 31},
-    {"September", 30},
-    {"October", 31},
-    {"November", 30},
-    {"December", 31}
+    {"January", 31}, {"February", 28}, {"March", 31}, {"April", 30},
+    {"May", 31}, {"June", 30}, {"July", 31}, {"August", 31},
+    {"September", 30}, {"October", 31}, {"November", 30}, {"December", 31}
 };
 
 void clearBuffer() {
@@ -69,20 +58,16 @@ string getValidTextInput(string prompt) {
     }
 }
 
-void trackUserIncome(User &user) {
-    cout << "\nEnter daily income in PHP: ";
-    user.dailyIncome = getValidNumberInput();
-    user.weeklyIncome = user.dailyIncome * 7;
-    user.monthlyIncome = user.dailyIncome * 30;
-    cout << "Income tracked successfully!\n";
-}
-
-void trackUserExpenses(User &user) {
+void trackUserExpenses(User &user, string timeFrame) {
     cout << "\n************************ Track Your Expenses ************************\n";
-    cout << "* Let's track your monthly expenses.                                   *\n";
-    cout << "* Please enter your expenses below.                                    *\n";
+    if (timeFrame == "weeks") {
+        cout << "* Let's track your weekly expenses.                                   *\n";
+    } else {
+        cout << "* Let's track your monthly expenses.                                  *\n";
+    }
+    cout << "* Please enter your expenses below.                                   *\n";
     cout << "***********************************************************************\n";
-        
+
     cout << "\n-------------------- Needs --------------------\n";
     double foodExpense, transportExpense, rentExpense, billsExpense;
 
@@ -119,35 +104,31 @@ void trackUserExpenses(User &user) {
         }
     }
 
-    if (numWants > 0) {
-        for (int i = 0; i < numWants; ++i) {
-            string want;
-            double expense;
-            cout << "\nEnter name of want " << (i + 1) << ": ";
-            getline(cin, want);
-            cout << "Enter expense for " << want << ": PHP ";
-            expense = getValidNumberInput();
-            user.wants.push_back(make_pair(want, expense));
-            user.totalWants += expense;
-        }
-    } else {
-        cout << "No wants entered.\n";
+    for (int i = 0; i < numWants; ++i) {
+        string want;
+        double expense;
+        cout << "\nEnter name of want " << (i + 1) << ": ";
+        getline(cin, want);
+        cout << "Enter expense for " << want << ": PHP ";
+        expense = getValidNumberInput();
+        user.wants.push_back(make_pair(want, expense));
+        user.totalWants += expense;
     }
 
-    user.totalExpenses = user.totalNeeds + user.totalWants;
-
+    user.totalExpenses += user.totalNeeds + user.totalWants;
     cout << "\nExpense tracking completed successfully!\n";
 }
 
-void showFinancialSummary(const User &user) {
+void showFinancialSummary(const User &user, string timeFrame) {
     cout << "\n************************ Financial Summary ************************\n";
     cout << "* Name: " << user.name << "\n";
     cout << "* Daily Income: PHP " << user.dailyIncome << "\n";
     cout << "* Weekly Income: PHP " << user.weeklyIncome << "\n";
-    cout << "* Monthly Income: PHP " << user.monthlyIncome << "\n";
+    if (timeFrame == "month") {
+        cout << "* Monthly Income: PHP " << user.monthlyIncome << "\n";
+    }
     cout << "* Total Expenses: PHP " << user.totalExpenses << "\n";
-    
-    // Breakdown of needs
+
     if (!user.needs.empty()) {
         cout << "\n-------------------- Needs Breakdown --------------------\n";
         for (const auto& need : user.needs) {
@@ -155,7 +136,6 @@ void showFinancialSummary(const User &user) {
         }
     }
 
-    // Breakdown of wants
     if (!user.wants.empty()) {
         cout << "\n-------------------- Wants Breakdown --------------------\n";
         for (const auto& want : user.wants) {
@@ -165,8 +145,9 @@ void showFinancialSummary(const User &user) {
 
     cout << "*******************************************************************\n";
 
-    double remainingBalance = user.monthlyIncome - user.totalExpenses;
-    
+    double budget = (timeFrame == "month") ? user.monthlyIncome : user.weeklyIncome;
+    double remainingBalance = budget - user.totalExpenses;
+
     if (remainingBalance < 0) {
         cout << "* Warning: You are overspending by PHP " << -remainingBalance << ". Try to reduce your expenses.\n";
     } else {
@@ -187,23 +168,42 @@ void trackBudgetForAllUsers() {
         }
     }
 
-    vector<User> users(numUsers);
-
-    // Tanungin muna ang user kung anong month bago mag compute
-    string month;
-    int daysInMonth = 0; 
+    string timeFrame;
+    int numberOfWeeks = 0;
     while (true) {
-        cout << "What month should we calculate for? (Enter a month from January to December): ";
-        getline(cin, month);
-
-        if (monthsDays.find(month) != monthsDays.end()) {
-            daysInMonth = monthsDays[month]; 
-            cout << "The month of " << month << " has " << daysInMonth << " days.\n";
+        cout << "What do you want to calculate, weeks or month? ";
+        getline(cin, timeFrame);
+        if (timeFrame == "weeks") {
+            cout << "How many weeks do you want to calculate? ";
+            cin >> numberOfWeeks;
+            clearBuffer();
+            if (numberOfWeeks > 0) break;
+        } else if (timeFrame == "month") {
             break;
         } else {
-            cout << "Invalid month entered. Please try again.\n";
+            cout << "Invalid choice. Please enter 'weeks' or 'month'.\n";
         }
     }
+
+    string month;
+    int daysInMonth = 0;
+    if (timeFrame == "month") {
+        while (true) {
+            cout << "What month should we calculate for? (Enter a month from January to December): ";
+            getline(cin, month);
+            if (monthsDays.find(month) != monthsDays.end()) {
+                daysInMonth = monthsDays[month];
+                cout << "The month of " << month << " has " << daysInMonth << " days.\n";
+                break;
+            } else {
+                cout << "Invalid month entered. Please try again.\n";
+            }
+        }
+    } else {
+        daysInMonth = numberOfWeeks * 7;
+    }
+
+    vector<User> users(numUsers);
 
     for (int i = 0; i < numUsers; ++i) {
         cout << "\nEnter name for user " << (i + 1) << ": ";
@@ -212,15 +212,65 @@ void trackBudgetForAllUsers() {
         string incomeSource = getValidTextInput("What is your source of income? (allowance, business, employment, pension): ");
         cout << "Your income source is: " << incomeSource << endl;
 
-        trackUserIncome(users[i]);
-        trackUserExpenses(users[i]);
-        showFinancialSummary(users[i]);
+        string anotherSource;
+        cout << "Do you have another source of income? (YES/NO): ";
+        getline(cin, anotherSource);
+        if (anotherSource == "YES" || anotherSource == "yes") {
+            string extraSource = getValidTextInput("Enter the name of the other income source: ");
+            cout << "How much is the amount from " << extraSource << "? PHP ";
+            double extraIncome = getValidNumberInput();
+            users[i].dailyIncome += (extraIncome / daysInMonth);
+        }
 
-        double budgetForMonth = daysInMonth * users[i].dailyIncome;  
-        cout << "Your budget for this month is: PHP " << budgetForMonth << endl;
+        if (incomeSource == "employment" || incomeSource == "Employment") {
+            string response;
+            double extra = 0.0;
+            cout << "Do you have extra income? (YES/NO): "; getline(cin, response);
+            if (response == "YES" || response == "yes") {
+                cout << "How much is your extra income? PHP ";
+                extra += getValidNumberInput();
+            }
+            cout << "Do you have a bonus? (YES/NO): "; getline(cin, response);
+            if (response == "YES" || response == "yes") {
+                cout << "How much is your bonus? PHP ";
+                extra += getValidNumberInput();
+            }
+            cout << "Did you work overtime? (YES/NO): "; getline(cin, response);
+            if (response == "YES" || response == "yes") {
+                cout << "How much did you earn from overtime? PHP ";
+                extra += getValidNumberInput();
+            }
+            users[i].dailyIncome += (extra / daysInMonth);
+        }
+
+        cout << "\nEnter daily income in PHP: ";
+        users[i].dailyIncome += getValidNumberInput();  
+        users[i].weeklyIncome = users[i].dailyIncome * 7;
+        users[i].monthlyIncome = users[i].dailyIncome * 30;
+
+        string unexpected;
+        cout << "Do you have any unexpected expenses? (YES/NO): ";
+        getline(cin, unexpected);
+        if (unexpected == "YES" || unexpected == "yes") {
+            cout << "How much was the unexpected expense? PHP ";
+            users[i].totalExpenses += getValidNumberInput();
+        }
+
+        string priority;
+        cout << "Do you have any priority expenses for this " << timeFrame << "? (YES/NO): ";
+        getline(cin, priority);
+        if (priority == "YES" || priority == "yes") {
+            cout << "How much are your priority expenses? PHP ";
+            users[i].totalExpenses += getValidNumberInput();
+        }
+
+        trackUserExpenses(users[i], timeFrame);
+        showFinancialSummary(users[i], timeFrame);
+
+        double budgetForPeriod = users[i].dailyIncome * daysInMonth;
+        cout << "Your budget for this " << timeFrame << " is: PHP " << budgetForPeriod << endl;
     }
 }
-
 
 int main() {
     cout << "************************ Budget and Finance Advisor ************************\n";
