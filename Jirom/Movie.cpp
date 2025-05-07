@@ -149,7 +149,7 @@ void showMovieList(const vector<Movie>& list, const string& header) {
 
 
 void chatbotSay(const string& message) {
-    cout << "[Bot] " << message << endl;
+    cout << "[MoviBot] " << message << endl;
 }
 
 void recommendMovie(const string& genreName) {
@@ -159,7 +159,8 @@ void recommendMovie(const string& genreName) {
         return;
     }
 
-    chatbotSay("Let me look through some great " + genreName + " movies for you...");
+    chatbotSay("Awesome choice! Let's find some " + genreName + " movies you might enjoy...");
+
 
     int index = 0;
     while (true) {
@@ -171,7 +172,8 @@ void recommendMovie(const string& genreName) {
             chatbotSay("How about this one?");
             displayMovie(m);
 
-            chatbotSay("Have you seen this movie before? (y/n): ");
+            chatbotSay("Seen this one already? Just say yes or no.");
+
             char seen;
             cin >> seen;
             cin.ignore();
@@ -225,21 +227,21 @@ string toLower(const string& s) {
     return result;
 }
 
-void removeMovieFromList(vector<Movie>& list, const string& title) {
+void removeMovieFromList(vector<Movie>& list, const string& title, const string& listName) {
     string loweredTitle = toLower(title);
-
     auto it = remove_if(list.begin(), list.end(), [&](const Movie& m) {
         return toLower(m.title) == loweredTitle;
     });
 
     if (it != list.end()) {
         list.erase(it, list.end());
-        cout << "Removed \"" << title << "\" from the list.\n";
+        chatbotSay("Got it! I removed \"" + title + "\" from your " + listName + " list.");
         saveData(); 
     } else {
-        cout << "Couldn't find \"" << title << "\" in that list.\n";
+        chatbotSay("Sorry, I can't find \"" + title + "\" in your " + listName + " list.");
     }
 }
+
 
 
 
@@ -281,9 +283,10 @@ void loadData() {
 
 
 int main() {
-    chatbotSay("Hi there! I'm your buddy Movibot.");
-    chatbotSay("I can recommend awesome films, save what you like, and help you keep track.");
-
+    chatbotSay("Hey there! I'm Movibot, your movie buddy.");
+    chatbotSay("I can help you find what to watch, save your favorites, and even track what you've seen.");
+    chatbotSay("Ready to discover something fun?");
+    
     loadData();
 
     string input;
@@ -294,19 +297,31 @@ int main() {
         getline(cin, input);
         transform(input.begin(), input.end(), input.begin(), ::tolower);
 
-        if (input.find("recommend") != string::npos || input.find("i want") != string::npos) {
-            for (string g : {"action", "drama", "comedy", "horror", "sci-fi", "scifi"}) {
-                if (input.find(g) != string::npos) {
-                    recommendMovie(g);
-                    goto skip;
-                }
+        vector<string> genres = {"action", "drama", "comedy", "horror", "sci-fi", "scifi"};
+
+        bool matched = false;
+        for (const string& g : genres) {
+            if (input.find(g) != string::npos) {
+                recommendMovie(g);
+                matched = true;
+                break;
             }
-            cout << "Please specify a genre like action, drama, horror, comedy, or sci-fi.\n";
-        } else if (input.find("show liked") != string::npos) {
+        }
+        
+        if (!matched && (
+            input.find("recommend") != string::npos ||
+            input.find("suggest") != string::npos ||
+            input.find("watch") != string::npos ||
+            input.find("movie") != string::npos ||
+            input.find("i want") != string::npos ||
+            input.find("mood") != string::npos
+        )) {
+            chatbotSay("Got it! But please mention the genre too — like 'comedy' or 'drama'.");
+        } else if (input.find("liked") != string::npos && input.find("show") != string::npos) {
             showMovieList(likedMovies, "Liked Movies");
-        } else if (input.find("show history") != string::npos) {
+        } else if ((input.find("history") != string::npos && input.find("show") != string::npos) || input.find("what have I watched") != string::npos) {
             showMovieList(watchHistory, "Watch History");
-        } else if (input.find("show later") != string::npos) {
+        } else if ((input.find("watch later") != string::npos && input.find("show") != string::npos) || input.find("saved for later") != string::npos) {
             showMovieList(watchLater, "Watch Later");
         } else if (input.find("best movie") != string::npos || input.find("show best") != string::npos) {
             showBestMovie();
@@ -318,7 +333,7 @@ int main() {
                 cout << "Invalid remove format. Use: remove [title] from [liked/history/later]\n";
             } else {
                 string rawTitle = input.substr(removePos, fromPos - removePos);
-                string listName = input.substr(fromPos + 5); // after "from "
+                string listName = input.substr(fromPos + 5); 
 
 
                 auto trim = [](string& s) {
@@ -328,9 +343,10 @@ int main() {
                 trim(rawTitle);
                 trim(listName);
         
-                if (listName == "liked") removeMovieFromList(likedMovies, rawTitle);
-                else if (listName == "history") removeMovieFromList(watchHistory, rawTitle);
-                else if (listName == "later") removeMovieFromList(watchLater, rawTitle);
+                if (listName == "liked") removeMovieFromList(likedMovies, rawTitle, "liked");
+                else if (listName == "history") removeMovieFromList(watchHistory, rawTitle, "history");
+                else if (listName == "later") removeMovieFromList(watchLater, rawTitle, "later");
+
                 else cout << "List name should be liked, history, or later.\n";
             }
         } else if (input == "exit" || input == "quit") {
@@ -347,8 +363,10 @@ int main() {
             cout << "- best movie        : Show the highest-rated movie you've liked or watched\n";
             cout << "- exit              : Save your progress and leave the chatbot\n";
         } else {
-            cout << "Sorry, I didn't get that. Try something like 'recommend comedy'.\n";
+            chatbotSay("Oops! I didn't quite catch that.");
+            chatbotSay("Try something like: 'recommend action', or type 'help' if you're lost.");
         }
+        
     skip:;
     }
 

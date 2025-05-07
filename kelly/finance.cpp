@@ -88,10 +88,9 @@ void showSummary(const BudgetUser& user, int monthDays) {
 
     cout << "\n----------- SUMMARY STATS ----------\n";
     cout << "Total Expenses     : PHP " << totalExpenses << "\n";
-    if (remaining < 0)
-        cout << "Overbudget by      : PHP " << -remaining << "\n";
-    else
-        cout << "Remaining Budget   : PHP " << remaining << "\n";
+    if (remaining > 0)
+        cout << "Savings            : PHP " << remaining << "\n";
+
 
     double percentNeeds = (totalNeeds / user.monthlyIncome) * 100;
     double percentWants = (totalWants / user.monthlyIncome) * 100;

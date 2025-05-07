@@ -1,8 +1,10 @@
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
 #include <ctime>
 #include <stack>
 #include <queue>
+#include <set>
 
 using namespace std;
 
@@ -104,24 +106,104 @@ int generateQuestion(string topic, string &question) {
         answer = a * b;
         question = "What is " + to_string(a) + " * " + to_string(b) + "?";
     } else if (topic == "Division") {
-        int result = (rand() % 10) + 1;
-        b = (rand() % 9) + 1;
+        int result = rand() % 10 + 1;
+        b = rand() % 9 + 1;
         a = result * b;
         answer = result;
         question = "What is " + to_string(a) + " / " + to_string(b) + "?";
+    } else if (topic == "Counting") {
+        answer = a + 1;
+        question = "What number comes after " + to_string(a) + "?";
+    } else if (topic == "Fractions") {
+        answer = 1;
+        question = "What is 1/2 + 1/2?";
+    } else if (topic == "Place Value") {
+        int number = (rand() % 9 + 1) * 100 + rand() % 100;
+        answer = (number / 100) * 100;
+        question = "What is the value of the hundreds digit in " + to_string(number) + "?";
+    } else if (topic == "Time") {
+        int hours = rand() % 5 + 1;
+        int minutes = rand() % 60;
+        answer = hours * 60 + minutes;
+        question = "How many minutes are in " + to_string(hours) + " hours and " + to_string(minutes) + " minutes?";
+    } else if (topic == "Decimals") {
+        double x = 0.1 * (rand() % 10);
+        double y = 0.1 * (rand() % 10);
+        double result = x + y;
+        result = round(result * 100) / 100; 
+        answer = static_cast<int>(result * 100); 
+        question = "What is " + to_string(x) + " + " + to_string(y) + "? (Answer in hundredths)";
+    } else if (topic == "Measurement") {
+        int cm = rand() % 20 + 1;
+        answer = cm * 10;
+        question = "A pencil is " + to_string(cm) + " cm long. How many millimeters is that?";
+    } else if (topic == "Geometry") {
+        answer = 3;
+        question = "How many sides does a triangle have?";
+    } else if (topic == "Long Division") {
+        int divisor = rand() % 9 + 2;
+        int quotient = rand() % 10 + 1;
+        int dividend = divisor * quotient;
+        answer = quotient;
+        question = "What is " + to_string(dividend) + " divided by " + to_string(divisor) + "?";
+    } else if (topic == "Word Problems") {
+        int start = rand() % 10 + 1;
+        int buy = rand() % 10 + 1;
+        answer = start + buy;
+        question = "You have " + to_string(start) + " apples and buy " + to_string(buy) + " more. How many do you have now?";
+    } else if (topic == "Ratios") {
+        int apples = rand() % 5 + 1;
+        int cost = apples * 2;
+        answer = 2;
+        question = "If " + to_string(apples) + " apples cost " + to_string(cost) + " pesos, how much does 1 apple cost?";
+    } else if (topic == "Percentages") {
+        int base = (rand() % 4 + 1) * 25; 
+        answer = base / 4;
+        question = "What is 25% of " + to_string(base) + "?";
+    } else if (topic == "Algebra") {
+        int x = rand() % 10 + 1;
+        int total = x + 4;
+        answer = x;
+        question = "Solve for x: x + 4 = " + to_string(total);
+    } else if (topic == "Data Analysis") {
+        int total = (rand() % 5 + 1) * 4; 
+        int green = total / 4;
+        answer = (green * 100) / total;
+        question = "If you have " + to_string(total) + " apples and " + to_string(green) + " are green, what percent are green?";
+    } else if (topic == "Volume") {
+        int l = rand() % 5 + 1;
+        int w = rand() % 5 + 1;
+        int h = rand() % 5 + 1;
+        answer = l * w * h;
+        question = "What is the volume of a box that is " + to_string(l) + "x" + to_string(w) + "x" + to_string(h) + " cm?";
+    } else {
+        answer = 0;
+        question = "Unknown topic selected.";
     }
     return answer;
 }
+
+
+
 
 void runQuiz(string selectedTopic, string name) {
     int score = 0;
     string question, userAnswer;
     int correctAnswer;
     queue<string> wrongQuestions, correctAnswers, userWrongAnswers;
+    set<string> usedQuestions;
 
-    for (int i = 1; i <= 10; i++) {
+    int questionsAsked = 0;
+
+    while (questionsAsked < 10) {
         correctAnswer = generateQuestion(selectedTopic, question);
-        cout << "\nQuestion " << i << ":\n" << question << "\nYour answer: ";
+
+
+        if (usedQuestions.count(question)) continue;
+        usedQuestions.insert(question);
+        questionsAsked++;
+
+        cout << "\nQuestion " << questionsAsked << ":\n" << question << "\nYour answer: ";
         cin >> userAnswer;
 
         if (userAnswer == to_string(correctAnswer)) {
@@ -160,6 +242,7 @@ void runQuiz(string selectedTopic, string name) {
     }
     printLine();
 }
+
 
 int main() {
     srand(time(0));

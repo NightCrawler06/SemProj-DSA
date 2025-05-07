@@ -252,17 +252,25 @@ void trackBudgetForAllUsers() {
         cout << "Do you have any unexpected expenses? (YES/NO): ";
         getline(cin, unexpected);
         if (unexpected == "YES" || unexpected == "yes") {
+            string unexpectedName = getValidTextInput("What is your unexpected expense? ");
             cout << "How much was the unexpected expense? PHP ";
-            users[i].totalExpenses += getValidNumberInput();
+            double unexpectedCost = getValidNumberInput();
+            users[i].totalExpenses += unexpectedCost;
+            cout << "Noted: " << unexpectedName << " - PHP " << unexpectedCost << "\n";
         }
+        
 
         string priority;
         cout << "Do you have any priority expenses for this " << timeFrame << "? (YES/NO): ";
         getline(cin, priority);
         if (priority == "YES" || priority == "yes") {
+            string priorityName = getValidTextInput("What is your priority expense for this month? ");
             cout << "How much are your priority expenses? PHP ";
-            users[i].totalExpenses += getValidNumberInput();
+            double priorityCost = getValidNumberInput();
+            users[i].totalExpenses += priorityCost;
+            cout << "Noted: " << priorityName << " - PHP " << priorityCost << "\n";
         }
+        
 
         trackUserExpenses(users[i], timeFrame);
         showFinancialSummary(users[i], timeFrame);
