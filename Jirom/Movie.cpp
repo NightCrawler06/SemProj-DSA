@@ -174,11 +174,11 @@ void recommendMovie(const string& genreName) {
 
             chatbotSay("Seen this one already? Just say yes or no.");
 
-            char seen;
-            cin >> seen;
-            cin.ignore();
+            string seen;
+            getline(cin, seen);
+            
 
-            if (seen == 'y') {
+            if (seen.find('y') != string::npos) {
                 if (!isInList(watchHistory, m)) watchHistory.push_back(m);
                 cout << "Added to your watch history.\n";
                 saveData();
