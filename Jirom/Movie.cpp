@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <fstream>
 #include <cctype>
+#include <map>
+
 using namespace std;
 
 struct Movie {
@@ -99,20 +101,50 @@ vector<Movie> sciFiMovies = {
     {"A Clockwork Orange", "Sci-Fi", 8.3, "In a dystopian future, a young delinquent undergoes behavioral modification in an attempt to be cured of his violent tendencies."}
 };
 
+vector<Movie> kidsMovies = {
+    {"Finding Nemo", "Kids", 8.1, "A clownfish sets out on a journey to find his missing son."},
+    {"Toy Story", "Kids", 8.3, "Toys come to life and go on adventures when humans aren't around."},
+    {"The Lion King", "Kids", 8.5, "A lion cub must embrace his destiny as king of the savannah."}
+};
 
 
 vector<Movie> likedMovies;
 vector<Movie> watchHistory;
 vector<Movie> watchLater;
+vector<Movie> currentlyWatching;
+
+map<string, vector<Movie>> userCollections;
 
 vector<Movie>* getGenreListByName(const string& genre) {
     if (genre == "action") return &actionMovies;
     if (genre == "drama") return &dramaMovies;
     if (genre == "comedy") return &comedyMovies;
     if (genre == "horror") return &horrorMovies;
+    if (genre == "kids") return &kidsMovies;
+
     if (genre == "sci-fi" || genre == "scifi") return &sciFiMovies;
     return nullptr;
 }
+
+void chatbotSay(const string& message) {
+    cout << "[MoviBot] " << message << endl;
+}
+
+
+void trim(string& s) {
+    s.erase(0, s.find_first_not_of(" \t"));
+    s.erase(s.find_last_not_of(" \t") + 1);
+}
+
+
+string toLower(const string& s) {
+    string result = s;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+
+
+
 
 bool isInList(const vector<Movie>& list, const Movie& movie) {
     return any_of(list.begin(), list.end(), [&](const Movie& m) {
@@ -148,9 +180,7 @@ void showMovieList(const vector<Movie>& list, const string& header) {
 }
 
 
-void chatbotSay(const string& message) {
-    cout << "[MoviBot] " << message << endl;
-}
+
 
 void recommendMovie(const string& genreName) {
     vector<Movie>* genreList = getGenreListByName(genreName);
@@ -191,6 +221,19 @@ void recommendMovie(const string& genreName) {
                     cout << "Added to your liked movies.\n";
                     saveData();
                 }
+                cout << "Would you like to rate this movie yourself? (y/n): ";
+                char rate;
+                cin >> rate;
+                cin.ignore();
+                if (rate == 'y') {
+                    cout << "Enter your rating (1-10): ";
+                    float userRating;
+                    cin >> userRating;
+                    cin.ignore();
+                    cout << "Thanks! You rated this " << userRating << "/10\n";
+
+                }
+
             } else {
                 chatbotSay("Want me to add this to your Watch Later list? (y/n): ");
 
@@ -221,11 +264,6 @@ void recommendMovie(const string& genreName) {
 }
 
 
-string toLower(const string& s) {
-    string result = s;
-    transform(result.begin(), result.end(), result.begin(), ::tolower);
-    return result;
-}
 
 void removeMovieFromList(vector<Movie>& list, const string& title, const string& listName) {
     string loweredTitle = toLower(title);
@@ -242,7 +280,57 @@ void removeMovieFromList(vector<Movie>& list, const string& title, const string&
     }
 }
 
+void startWatching(const string& title) {
+    vector<Movie>* allGenres[] = {&actionMovies, &dramaMovies, &comedyMovies, &horrorMovies, &sciFiMovies, &kidsMovies};
+    for (auto* genre : allGenres) {
+        for (const Movie& m : *genre) {
+            if (toLower(m.title) == toLower(title)) {
+                currentlyWatching.push_back(m);
+                chatbotSay("You're now watching \"" + m.title + "\".");
+                return;
+            }
+        }
+    }
+    chatbotSay("Couldn't find that title to start watching.");
+}
 
+void finishWatching(const string& title) {
+    auto it = find_if(currentlyWatching.begin(), currentlyWatching.end(), [&](const Movie& m) {
+        return toLower(m.title) == toLower(title);
+    });
+    if (it != currentlyWatching.end()) {
+        watchHistory.push_back(*it);
+        currentlyWatching.erase(it);
+        chatbotSay("Marked \"" + title + "\" as finished and moved to history.");
+        saveData();
+    } else {
+        chatbotSay("You're not currently watching \"" + title + "\".");
+    }
+}
+
+
+
+void addToCollection(const string& title, const string& collection) {
+    vector<Movie>* allGenres[] = {&actionMovies, &dramaMovies, &comedyMovies, &horrorMovies, &sciFiMovies, &kidsMovies};
+    for (auto* genre : allGenres) {
+        for (const Movie& m : *genre) {
+            if (toLower(m.title) == toLower(title)) {
+                userCollections[collection].push_back(m);
+                chatbotSay("Added \"" + m.title + "\" to your \"" + collection + "\" collection.");
+                return;
+            }
+        }
+    }
+    chatbotSay("Sorry, I couldn't find that movie.");
+}
+
+void showCollection(const string& name) {
+    if (userCollections.find(name) == userCollections.end()) {
+        chatbotSay("No collection named \"" + name + "\" found.");
+        return;
+    }
+    showMovieList(userCollections[name], name + " Collection");
+}
 
 
 void showBestMovie() {
@@ -278,8 +366,61 @@ void loadData() {
     load("later.txt", watchLater);
 }
 
+void suggestSimilarMovie(const string& title) {
+    for (const Movie& liked : likedMovies) {
+        if (toLower(liked.title) == toLower(title)) {
+            vector<Movie>* genreList = getGenreListByName(toLower(liked.genre));
+            chatbotSay("Here are similar movies in the same genre:");
+            for (const Movie& m : *genreList) {
+                if (m.title != liked.title && abs(m.rating - liked.rating) <= 0.5)
+                    displayMovie(m);
+            }
+            return;
+        }
+    }
+    chatbotSay("You haven't liked that movie yet.");
+}
 
 
+void showTopRatedMovies() {
+    vector<Movie> allMovies;
+    allMovies.insert(allMovies.end(), actionMovies.begin(), actionMovies.end());
+    allMovies.insert(allMovies.end(), dramaMovies.begin(), dramaMovies.end());
+    allMovies.insert(allMovies.end(), comedyMovies.begin(), comedyMovies.end());
+    allMovies.insert(allMovies.end(), horrorMovies.begin(), horrorMovies.end());
+    allMovies.insert(allMovies.end(), sciFiMovies.begin(), sciFiMovies.end());
+    allMovies.insert(allMovies.end(), kidsMovies.begin(), kidsMovies.end());
+
+    sort(allMovies.begin(), allMovies.end(), [](const Movie& a, const Movie& b) {
+        return a.rating > b.rating;
+    });
+
+    cout << "\nTop 5 Rated Movies:\n";
+    for (int i = 0; i < min(5, (int)allMovies.size()); ++i) {
+        displayMovie(allMovies[i]);
+        cout << "--------------------------\n";
+    }
+}
+
+void showLowestRatedMovies() {
+    vector<Movie> allMovies;
+    allMovies.insert(allMovies.end(), actionMovies.begin(), actionMovies.end());
+    allMovies.insert(allMovies.end(), dramaMovies.begin(), dramaMovies.end());
+    allMovies.insert(allMovies.end(), comedyMovies.begin(), comedyMovies.end());
+    allMovies.insert(allMovies.end(), horrorMovies.begin(), horrorMovies.end());
+    allMovies.insert(allMovies.end(), sciFiMovies.begin(), sciFiMovies.end());
+    allMovies.insert(allMovies.end(), kidsMovies.begin(), kidsMovies.end());
+
+    sort(allMovies.begin(), allMovies.end(), [](const Movie& a, const Movie& b) {
+        return a.rating < b.rating;
+    });
+
+    cout << "\nLowest 5 Rated Movies:\n";
+    for (int i = 0; i < min(5, (int)allMovies.size()); ++i) {
+        displayMovie(allMovies[i]);
+        cout << "--------------------------\n";
+    }
+}
 
 
 int main() {
@@ -293,11 +434,12 @@ int main() {
     while (true) {
         cout << "\nWhat would you like to do?\n";
         cout << "Type 'help' to see available commands.\n";
-        cout << "Your input: ";
+        chatbotSay("Your input: ");
         getline(cin, input);
         transform(input.begin(), input.end(), input.begin(), ::tolower);
 
-        vector<string> genres = {"action", "drama", "comedy", "horror", "sci-fi", "scifi"};
+        vector<string> genres = {"action", "drama", "comedy", "horror", "sci-fi", "scifi", "kids"};
+
 
         bool matched = false;
         for (const string& g : genres) {
@@ -349,7 +491,52 @@ int main() {
 
                 else cout << "List name should be liked, history, or later.\n";
             }
-        } else if (input == "exit" || input == "quit") {
+        }
+        else if (input.find("add") != string::npos && input.find("to") != string::npos) {
+            size_t addPos = input.find("add") + 3;
+            size_t toPos = input.find("to");
+            string rawTitle = input.substr(addPos, toPos - addPos);
+            string collection = input.substr(toPos + 2);
+            trim(rawTitle);
+            trim(collection);
+            addToCollection(rawTitle, collection);
+        }
+        else if (input.find("show") != string::npos && input.find("collection") != string::npos) {
+            string name = input;
+            name.erase(0, input.find("show") + 4);
+            name.erase(name.find("collection"), string::npos);
+            trim(name);
+            showCollection(name);
+        }
+        else if (input.find("suggest similar") != string::npos) {
+            string title = input.substr(input.find("to") + 2);
+            trim(title);
+            suggestSimilarMovie(title);
+        }
+
+
+        else if (input.find("start watching") != string::npos) {
+            string title = input.substr(input.find("start watching") + 14);
+            trim(title);
+            startWatching(title);
+        }
+        else if (input.find("mark finished") != string::npos) {
+            string title = input.substr(input.find("mark finished") + 13);
+            trim(title);
+            finishWatching(title);
+        }
+        else if (input.find("show currently watching") != string::npos) {
+            showMovieList(currentlyWatching, "Currently Watching");
+        }        
+        else if (input.find("most rated") != string::npos || input.find("top rated") != string::npos) {
+            showTopRatedMovies();
+        }
+        else if (input.find("low rated") != string::npos || input.find("worst rated") != string::npos) {
+            showLowestRatedMovies();
+        }
+
+
+        else if (input == "exit" || input == "quit") {
             saveData();
             cout << "Thanks for using the chatbot! Your data has been saved.\n";
             break;

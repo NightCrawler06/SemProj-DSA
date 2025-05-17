@@ -239,18 +239,17 @@ bool isValidLoanAmount(double amount) {
 
 
 void applyNewLoan() {
-
     Customer newCustomer;
-    cout << "\nGreat! Let's begin your loan application.\n";
+    cout << "\nSure thing! We'll walk through your loan application step-by-step.\n";
+    cout << "No pressure - just answer as best as you can, and I'll do the rest!\n\n";
 
-    cout << "Can you tell me your full name? ";
+    cout << "First, may I have your full name? ";
     getline(cin, newCustomer.customerName);
 
     if (newCustomer.customerName.empty()) {
-        cout << "Name cannot be empty. Let's try again next time.\n";
+        cout << "Name cannot be empty. Let's try again another time.\n";
         return;
     }
-
 
     for (const Customer& c : customerRecords) {
         if (c.customerName == newCustomer.customerName) {
@@ -259,30 +258,30 @@ void applyNewLoan() {
         }
     }
 
-    cout << "Nice to meet you, " << newCustomer.customerName << ".\n";
-    cout << "How much would you like to borrow (PHP)? ";
+    cout << "\nGreat, " << newCustomer.customerName << ".\n";
+    cout << "Let's talk numbers. How much money are you hoping to borrow today (in PHP)? ";
     cin >> newCustomer.loanAmount;
     cin.ignore();
 
     if (!isValidLoanAmount(newCustomer.loanAmount)) {
-        cout << "Oops - the loan amount should be between PHP 1,000 and PHP 10,000,000.\n";
+        cout << "Hmm, that amount seems outside our allowed range.\n";
+        cout << "We currently offer loans from PHP 1,000 up to PHP 10,000,000.\n";
         return;
     }
 
-    cout << "Over how many months would you like to repay the loan? ";
+    cout << "\nOver how many months would you feel comfortable repaying the loan?\n";
+    cout << "(We offer repayment terms between 3 and 24 months): ";
     string monthsInput;
     getline(cin, monthsInput);
 
-
     size_t numberStart = monthsInput.find_first_of("0123456789");
     if (numberStart == string::npos) {
-        cout << "Sorry, I couldn't find a number in your input.\n";
+        cout << "I didn't quite catch a valid number of months. Please try again like '12 months'.\n";
         return;
     }
 
     size_t numberEnd = monthsInput.find_first_not_of("0123456789", numberStart);
     string numberStr = monthsInput.substr(numberStart, numberEnd - numberStart);
-
     newCustomer.repaymentMonths = stoi(numberStr);
 
     if (newCustomer.repaymentMonths < 3 || newCustomer.repaymentMonths > 24) {
@@ -290,12 +289,10 @@ void applyNewLoan() {
         return;
     }
 
-    
-
-    cout << "Can you describe the item you're offering as collateral? ";
+    cout << "\nTo help secure your loan, can you describe the item you're offering as collateral?\n";
     getline(cin, newCustomer.collateralItemDescription);
 
-    cout << "And what's the estimated value of that item (PHP)? ";
+    cout << "What's the estimated value of that item? (PHP): ";
     cin >> newCustomer.collateralValue;
     cin.ignore();
 
@@ -304,17 +301,16 @@ void applyNewLoan() {
         return;
     }
 
-    cout << "Lastly, what is today's date or the date of your loan application? (YYYY-MM-DD): ";
+    cout << "\nAlmost done! When are you applying for this loan? (Use format YYYY-MM-DD): ";
     getline(cin, newCustomer.applicationDate);
-
 
     newCustomer.interestRate = (newCustomer.loanAmount > 50000) ? 3.0 : 5.0;
     newCustomer.isLoanPaid = false;
 
-
+    cout << "\nThanks for that. Here's a quick summary of what we've discussed:\n";
     showLoanSummary(newCustomer);
 
-    cout << "Do you accept these loan terms? (Y/N): ";
+    cout << "Does everything look good to you? Would you like to submit this application? (Y/N): ";
     string confirmationResponse;
     getline(cin, confirmationResponse);
 
@@ -322,9 +318,8 @@ void applyNewLoan() {
         pendingLoanApplications.push_back(newCustomer);
         cout << "Thank you! Your loan application has been submitted for review.\n";
     } else {
-        cout << "No worries - your loan application has been canceled.\n";
+        cout << "No problem - your loan application has been canceled.\n";
     }
-    
 }
 
 
@@ -531,9 +526,9 @@ int main() {
         getline(cin, userCommand);
         string lowercaseCommand = convertToLowercase(userCommand);
 
-        if (lowercaseCommand.find("apply") != string::npos || lowercaseCommand.find("apply for loan") != string::npos) {
+        if (lowercaseCommand.find("apply") != string::npos || lowercaseCommand.find("borrow") != string::npos) {
             applyNewLoan();
-        } else if (lowercaseCommand.find("paid") != string::npos && lowercaseCommand.find("mark") == string::npos) {
+        } else if (lowercaseCommand.find("paid") != string::npos ) {
             showPaidLoans();
         } else if (lowercaseCommand.find("active") != string::npos || lowercaseCommand.find("unpaid") != string::npos) {
             showUnpaidLoans();
@@ -545,6 +540,13 @@ int main() {
             functionForAnswering(userCommand);
         } else if (lowercaseCommand.find("review") != string::npos) {
             reviewPendingApplications();
+        } else if (lowercaseCommand.find("hi") != string::npos ||
+            lowercaseCommand.find("hello") != string::npos ||
+            lowercaseCommand.find("hey") != string::npos ||
+            lowercaseCommand.find("good morning") != string::npos ||
+            lowercaseCommand.find("good afternoon") != string::npos ||
+            lowercaseCommand.find("good evening") != string::npos) {
+            cout << "Hi there! How can I help you with loans today?\n";
         } else if (lowercaseCommand.find("exit") != string::npos || lowercaseCommand.find("quit") != string::npos) {
             cout << "Goodbye! Thanks for using LoanMate.\n";
             saveLoansToFile();
