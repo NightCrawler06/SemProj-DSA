@@ -104,7 +104,19 @@ vector<Movie> sciFiMovies = {
 vector<Movie> kidsMovies = {
     {"Finding Nemo", "Kids", 8.1, "A clownfish sets out on a journey to find his missing son."},
     {"Toy Story", "Kids", 8.3, "Toys come to life and go on adventures when humans aren't around."},
-    {"The Lion King", "Kids", 8.5, "A lion cub must embrace his destiny as king of the savannah."}
+    {"The Lion King", "Kids", 8.5, "A lion cub must embrace his destiny as king of the savannah."},
+    {"Zootopia", "Kids", 8.0, "A bunny cop and a fox con artist uncover a conspiracy in the city of Zootopia."},
+    {"Frozen", "Kids", 7.4, "Two royal sisters learn about love, family, and self-discovery through magical ice powers."},
+    {"Moana", "Kids", 7.6, "A young girl sails across the ocean to save her island with the help of a demigod."},
+    {"Shrek", "Kids", 7.9, "An ogre goes on a quest to rescue a princess and ends up finding love and friendship."},
+    {"Coco", "Kids", 8.4, "A boy journeys to the Land of the Dead to unlock his family's history through music."},
+    {"Inside Out", "Kids", 8.1, "A young girl's emotions come to life as she navigates a difficult move to a new city."},
+    {"Despicable Me", "Kids", 7.6, "A supervillain adopts three girls as part of a plan but ends up loving them."},
+    {"Ratatouille", "Kids", 8.1, "A rat with culinary talent tries to become a chef in a Paris restaurant."},
+    {"Up", "Kids", 8.2, "A grumpy old man and a young boy scout go on a flying house adventure."},
+    {"The Incredibles", "Kids", 8.0, "A family of superheroes must come out of hiding to save the world."},
+    {"Luca", "Kids", 7.4, "Two sea monster boys explore the human world above the ocean in a small Italian town."},
+    {"Turning Red", "Kids", 7.0, "A 13-year-old girl starts transforming into a red panda whenever she gets too excited."}
 };
 
 
@@ -112,6 +124,9 @@ vector<Movie> likedMovies;
 vector<Movie> watchHistory;
 vector<Movie> watchLater;
 vector<Movie> currentlyWatching;
+vector<Movie> customMovies;
+vector<pair<Movie, float>> userRatedMovies;
+
 
 map<string, vector<Movie>> userCollections;
 
@@ -213,34 +228,33 @@ void recommendMovie(const string& genreName) {
                 cout << "Added to your watch history.\n";
                 saveData();
                 cout << "Did you enjoy it? (y/n): ";
-                char liked;
-                cin >> liked;
-                cin.ignore();
-                if (liked == 'y' && !isInList(likedMovies, m)) {
+                string likedInput;
+                getline(cin, likedInput);
+                if (!likedInput.empty() && tolower(likedInput[0]) == 'y') {
+
                     likedMovies.push_back(m);
                     cout << "Added to your liked movies.\n";
                     saveData();
                 }
                 cout << "Would you like to rate this movie yourself? (y/n): ";
-                char rate;
-                cin >> rate;
-                cin.ignore();
-                if (rate == 'y') {
+                string rateInput;
+                getline(cin, rateInput);
+                if (!rateInput.empty() && tolower(rateInput[0]) == 'y') {
+
                     cout << "Enter your rating (1-10): ";
                     float userRating;
                     cin >> userRating;
                     cin.ignore();
                     cout << "Thanks! You rated this " << userRating << "/10\n";
 
+                    userRatedMovies.push_back({m, userRating});
                 }
 
             } else {
                 chatbotSay("Want me to add this to your Watch Later list? (y/n): ");
-
-                char later;
-                cin >> later;
-                cin.ignore();
-                if (later == 'y' && !isInList(watchLater, m)) {
+                string laterInput;
+                getline(cin, laterInput);
+                if (!laterInput.empty() && tolower(laterInput[0]) == 'y') {
                     watchLater.push_back(m);
                     cout << "Added to your watch later list.\n";
                     saveData();
@@ -256,10 +270,11 @@ void recommendMovie(const string& genreName) {
         }
 
         cout << "\nWould you like to see 3 more suggestions? (y/n): ";
-        char again;
-        cin >> again;
-        cin.ignore();
-        if (again != 'y') break;
+        string again;
+        getline(cin, again);
+        transform(again.begin(), again.end(), again.begin(), ::tolower);
+        if (again != "y") break;
+
     }
 }
 
@@ -311,9 +326,11 @@ void finishWatching(const string& title) {
 
 
 void addToCollection(const string& title, const string& collection) {
-    vector<Movie>* allGenres[] = {&actionMovies, &dramaMovies, &comedyMovies, &horrorMovies, &sciFiMovies, &kidsMovies};
-    for (auto* genre : allGenres) {
-        for (const Movie& m : *genre) {
+    vector<Movie>* allSources[] = {&actionMovies, &dramaMovies, &comedyMovies, &horrorMovies, &sciFiMovies, &kidsMovies, &customMovies};
+
+
+    for (auto* source : allSources) {
+        for (const Movie& m : *source) {
             if (toLower(m.title) == toLower(title)) {
                 userCollections[collection].push_back(m);
                 chatbotSay("Added \"" + m.title + "\" to your \"" + collection + "\" collection.");
@@ -321,8 +338,10 @@ void addToCollection(const string& title, const string& collection) {
             }
         }
     }
+
     chatbotSay("Sorry, I couldn't find that movie.");
 }
+
 
 void showCollection(const string& name) {
     if (userCollections.find(name) == userCollections.end()) {
@@ -422,6 +441,63 @@ void showLowestRatedMovies() {
     }
 }
 
+void deleteCollection(const string& name) {
+    if (userCollections.erase(name)) {
+        chatbotSay("Collection \"" + name + "\" has been deleted.");
+    } else {
+        chatbotSay("No collection named \"" + name + "\" was found.");
+    }
+}
+
+void removeFromCollection(const string& title, const string& collection) {
+    auto it = userCollections.find(collection);
+    if (it == userCollections.end()) {
+        chatbotSay("Collection \"" + collection + "\" not found.");
+        return;
+    }
+
+    auto& movies = it->second;
+    string loweredTitle = toLower(title);
+    auto movieIt = remove_if(movies.begin(), movies.end(), [&](const Movie& m) {
+        return toLower(m.title) == loweredTitle;
+    });
+
+    if (movieIt != movies.end()) {
+        movies.erase(movieIt, movies.end());
+        chatbotSay("Removed \"" + title + "\" from the \"" + collection + "\" collection.");
+    } else {
+        chatbotSay("Movie not found in that collection.");
+    }
+}
+
+void showUserBestRatings() {
+    if (userRatedMovies.empty()) {
+        chatbotSay("You haven't rated any movies yet.");
+        return;
+    }
+    sort(userRatedMovies.begin(), userRatedMovies.end(), [](auto& a, auto& b) {
+        return a.second > b.second;
+    });
+    chatbotSay("Your Top 3 Rated Movies:");
+    for (int i = 0; i < min(3, (int)userRatedMovies.size()); ++i) {
+        cout << "- " << userRatedMovies[i].first.title << " (" << userRatedMovies[i].second << "/10)\n";
+    }
+}
+
+void showUserWorstRatings() {
+    if (userRatedMovies.empty()) {
+        chatbotSay("You haven't rated any movies yet.");
+        return;
+    }
+    sort(userRatedMovies.begin(), userRatedMovies.end(), [](auto& a, auto& b) {
+        return a.second < b.second;
+    });
+    chatbotSay("Your Lowest 3 Rated Movies:");
+    for (int i = 0; i < min(3, (int)userRatedMovies.size()); ++i) {
+        cout << "- " << userRatedMovies[i].first.title << " (" << userRatedMovies[i].second << "/10)\n";
+    }
+}
+
 
 int main() {
     chatbotSay("Hey there! I'm Movibot, your movie buddy.");
@@ -435,10 +511,13 @@ int main() {
         cout << "\nWhat would you like to do?\n";
         cout << "Type 'help' to see available commands.\n";
         chatbotSay("Your input: ");
+        cin.clear();
         getline(cin, input);
         transform(input.begin(), input.end(), input.begin(), ::tolower);
 
+
         vector<string> genres = {"action", "drama", "comedy", "horror", "sci-fi", "scifi", "kids"};
+
 
 
         bool matched = false;
@@ -449,16 +528,49 @@ int main() {
                 break;
             }
         }
+        if (matched) continue; 
+
         
-        if (!matched && (
-            input.find("recommend") != string::npos ||
-            input.find("suggest") != string::npos ||
-            input.find("watch") != string::npos ||
-            input.find("movie") != string::npos ||
-            input.find("i want") != string::npos ||
-            input.find("mood") != string::npos
-        )) {
-            chatbotSay("Got it! But please mention the genre too — like 'comedy' or 'drama'.");
+        if (input.find("suggest similar") != string::npos) {
+            string title = input.substr(input.find("to") + 2);
+            trim(title);
+            suggestSimilarMovie(title);
+        } else if (input.find("start watching") != string::npos) {
+            string title = input.substr(input.find("start watching") + 14);
+            trim(title);
+            startWatching(title);
+        } else if (input.find("mark finished") != string::npos) {
+            string title = input.substr(input.find("mark finished") + 13);
+            trim(title);
+            finishWatching(title);
+        } else if (input.find("show currently watching") != string::npos) {
+            showMovieList(currentlyWatching, "Currently Watching");
+        } else if (input.find("add custom movie") != string::npos) {
+            Movie m;
+            cout << "Enter title: ";
+            getline(cin, m.title);
+            cout << "Enter genre: ";
+            getline(cin, m.genre);
+            cout << "Enter rating (e.g., 7.5): ";
+            cin >> m.rating;
+            cin.ignore();
+            cout << "Enter description: ";
+            getline(cin, m.description);
+
+            customMovies.push_back(m);
+            chatbotSay("Got it! Your custom movie was added.");
+
+            cout << "Would you like to add it to a collection? (y/n): ";
+            char choice;
+            cin >> choice;
+            cin.ignore();
+            if (choice == 'y') {
+                cout << "Enter collection name: ";
+                string collection;
+                getline(cin, collection);
+                userCollections[collection].push_back(m);
+                chatbotSay("Added to your \"" + collection + "\" collection.");
+            }
         } else if (input.find("liked") != string::npos && input.find("show") != string::npos) {
             showMovieList(likedMovies, "Liked Movies");
         } else if ((input.find("history") != string::npos && input.find("show") != string::npos) || input.find("what have I watched") != string::npos) {
@@ -491,8 +603,7 @@ int main() {
 
                 else cout << "List name should be liked, history, or later.\n";
             }
-        }
-        else if (input.find("add") != string::npos && input.find("to") != string::npos) {
+        } else if (input.find("add") != string::npos && input.find("to") != string::npos) {
             size_t addPos = input.find("add") + 3;
             size_t toPos = input.find("to");
             string rawTitle = input.substr(addPos, toPos - addPos);
@@ -500,55 +611,67 @@ int main() {
             trim(rawTitle);
             trim(collection);
             addToCollection(rawTitle, collection);
-        }
+        } 
         else if (input.find("show") != string::npos && input.find("collection") != string::npos) {
             string name = input;
             name.erase(0, input.find("show") + 4);
             name.erase(name.find("collection"), string::npos);
             trim(name);
             showCollection(name);
-        }
-        else if (input.find("suggest similar") != string::npos) {
-            string title = input.substr(input.find("to") + 2);
+        } else if (input.find("delete collection") != string::npos) {
+            string name = input.substr(input.find("delete collection") + 17);
+            trim(name);
+            deleteCollection(name);
+        } else if (input.find("remove") != string::npos && input.find("from collection") != string::npos) {
+            size_t removePos = input.find("remove") + 6;
+            size_t fromPos = input.find("from collection");
+            string title = input.substr(removePos, fromPos - removePos);
+            string collection = input.substr(fromPos + 15);
             trim(title);
-            suggestSimilarMovie(title);
-        }
-
-
-        else if (input.find("start watching") != string::npos) {
-            string title = input.substr(input.find("start watching") + 14);
-            trim(title);
-            startWatching(title);
-        }
-        else if (input.find("mark finished") != string::npos) {
-            string title = input.substr(input.find("mark finished") + 13);
-            trim(title);
-            finishWatching(title);
-        }
-        else if (input.find("show currently watching") != string::npos) {
-            showMovieList(currentlyWatching, "Currently Watching");
-        }        
-        else if (input.find("most rated") != string::npos || input.find("top rated") != string::npos) {
+            trim(collection);
+            removeFromCollection(title, collection);
+        } else if (input.find("most rated") != string::npos || input.find("top rated") != string::npos) {
             showTopRatedMovies();
-        }
-        else if (input.find("low rated") != string::npos || input.find("worst rated") != string::npos) {
+        } else if (input.find("low rated") != string::npos || input.find("worst rated") != string::npos) {
             showLowestRatedMovies();
-        }
-
-
-        else if (input == "exit" || input == "quit") {
+        }else if (input.find("my top ratings") != string::npos || input.find("my best ratings") != string::npos) {
+            showUserBestRatings();
+        } else if (input.find("my worst ratings") != string::npos || input.find("my low ratings") != string::npos) {
+            showUserWorstRatings();
+        } else if (!matched && (
+            input.find("recommend") != string::npos ||
+            input.find("suggest") != string::npos ||
+            input.find("watch") != string::npos ||
+            input.find("movie") != string::npos ||
+            input.find("i want") != string::npos ||
+            input.find("mood") != string::npos
+        )) {
+            chatbotSay("Got it! But please mention the genre too — like 'comedy' or 'drama'.");
+        } else if (input == "exit" || input == "quit") {
             saveData();
             cout << "Thanks for using the chatbot! Your data has been saved.\n";
             break;
         } else if (input == "help") {
             chatbotSay("Need a hand? Here's what I can help you with:");
-            cout << "- recommend [genre] : Get up to 3 movie suggestions (e.g., recommend action)\n";
-            cout << "- show liked        : View your liked movies\n";
-            cout << "- show history      : See what you've watched\n";
-            cout << "- show later        : View your Watch Later list\n";
+            cout << "- recommend [genre]                       : Get up to 3 movie suggestions (e.g., recommend action)\n";
+            cout << "- show liked                              : View your liked movies\n";
+            cout << "- show history                            : See what you've watched\n";
+            cout << "- show watch later                        : View your Watch Later list\n";
             cout << "- remove [title] from [liked/history/later] : Remove a movie from a list\n";
-            cout << "- best movie        : Show the highest-rated movie you've liked or watched\n";
-            cout << "- exit              : Save your progress and leave the chatbot\n";
+            cout << "- add [movie title] to [collection name]  : Add a movie to a named collection\n";
+            cout << "- show [collection name] collection       : View all movies in a collection\n";
+            cout << "- delete collection [name]                : Delete an entire collection\n";
+            cout << "- remove [title] from collection [name]   : Remove a movie from a collection\n";    
+            cout << "- suggest similar to [title]              : Find similar movies to ones you liked\n";
+            cout << "- start watching [title]                  : Mark a movie as currently watching\n";
+            cout << "- mark finished [title]                   : Mark a movie as finished and move to history\n";
+            cout << "- show currently watching                 : View all movies you're currently watching\n";
+            cout << "- best movie                              : Show the highest-rated movie you've liked or watched\n";
+            cout << "- worst rated / low rated                 : Show the lowest-rated movies from the system\n";
+            cout << "- my top ratings                          : Show your top 3 rated movies\n";
+            cout << "- my worst ratings                        : Show your lowest 3 rated movies\n";
+            cout << "- add custom movie                        : Create and save your own movie\n";
+            cout << "- exit                                    : Save your progress and leave the chatbot\n";
         } else {
             chatbotSay("Oops! I didn't quite catch that.");
             chatbotSay("Try something like: 'recommend action', or type 'help' if you're lost.");

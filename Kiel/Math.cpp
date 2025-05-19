@@ -184,8 +184,6 @@ int generateQuestion(string topic, string &question) {
 }
 
 
-
-
 void runQuiz(string selectedTopic, string name) {
     int score = 0;
     string question, userAnswer;
@@ -207,26 +205,16 @@ void runQuiz(string selectedTopic, string name) {
         cin >> userAnswer;
 
         if (userAnswer == to_string(correctAnswer)) {
-            cout << "Correct!\n";
             score++;
             continue;
-        }
-
-        cout << "Not quite.\n" << giveHint(selectedTopic) << "\nTry again: ";
-        cin >> userAnswer;
-
-        if (userAnswer == to_string(correctAnswer)) {
-            cout << "Good job, you got it on the second try!\n";
-            score++;
         } else {
-            cout << "Still not right. The correct answer was: " << correctAnswer << "\n";
             wrongQuestions.push(question);
             correctAnswers.push(to_string(correctAnswer));
             userWrongAnswers.push(userAnswer);
         }
     }
 
-    printLine();
+        printLine();
     cout << "\nQuiz Complete, " << name << "!\nYour score: " << score << "/10\n";
 
     if (!wrongQuestions.empty()) {
@@ -240,7 +228,34 @@ void runQuiz(string selectedTopic, string name) {
             userWrongAnswers.pop();
         }
     }
+
     printLine();
+    cout << "\nBefore we finish, we'd love your feedback!\n";
+    
+    string learned;
+    int rating;
+
+    cout << "Did you learn something from this topic? (yes/no): ";
+    cin >> learned;
+
+    cout << "How would you rate this topic? (1 to 5): ";
+    cin >> rating;
+
+    cout << "\nThanks for your feedback! You're helping make learning better.\n";
+
+
+    if (score < 6) {
+        string retry;
+        cout << "\nYou didn't pass the quiz.\nWould you like to try again? (yes/no): ";
+        cin >> retry;
+        if (retry == "yes") {
+            runQuiz(selectedTopic, name);  
+        } else {
+            cout << "No worries! You can try again anytime.\n";
+        }
+    }
+
+
 }
 
 
@@ -263,53 +278,58 @@ int main() {
     }
 
     while (true) {
-        printLine();
-        cout << "\nTopics for Grade " << grade << ":\n";
-        for (int i = 0; i < 5; i++) {
-            cout << i + 1 << ". " << gradeTopics[grade - 1][i] << "\n";
-        }
 
-        printLine();
-        cout << "\nWhat would you like to do, " << name << "?\n";
-        cout << "1. Review a topic\n";
-        cout << "2. Take a quiz\n";
-        cout << "3. Exit\n";
-        cout << "Enter your choice (1-3): ";
-        int action;
-        cin >> action;
+    printLine();
+    cout << "\nTopics for Grade " << grade << ":\n";
+    for (int i = 0; i < 5; i++) {
+        cout << i + 1 << ". " << gradeTopics[grade - 1][i] << "\n";
+    }
+    printLine();
 
-        if (action == 3) {
-            cout << "\nThanks for learning with me today, " << name << "!\nKeep practicing and see you next time!\n";
-            break;
-        }
 
-        if (action != 1 && action != 2) {
-            cout << "Invalid option. Please choose 1, 2, or 3.\n";
-            continue;
-        }
+    cout << "\nWhat would you like to do, " << name << "?\n";
+    cout << "1. Review a topic\n";
+    cout << "2. Take a quiz\n";
+    cout << "3. Exit\n";
+    cout << "Enter your choice (1-3): ";
+    int action;
+    cin >> action;
 
-        cout << "\nEnter a topic number (1-5): ";
-        cin >> choice;
-        if (choice < 1 || choice > 5) {
-            cout << "That topic number is not available. Please choose from 1 to 5.\n";
-            continue;
-        }
+    if (action == 3) {
+        cout << "\nThanks for learning with me today, " << name << "!\nKeep practicing and see you next time!\n";
+        break;
+    }
 
-        string selectedTopic = gradeTopics[grade - 1][choice - 1];
+    if (action != 1 && action != 2) {
+        cout << "Invalid option. Please choose 1, 2, or 3.\n";
+        continue;
+    }
 
-        if (action == 1) {
-            explainTopic(selectedTopic);
-        } else if (action == 2) {
-            string confirm;
-            cout << "Are you ready to take a quiz on " << selectedTopic << "? (yes/no): ";
-            cin >> confirm;
-            if (confirm == "yes") {
-                runQuiz(selectedTopic, name);
-            } else {
-                cout << "No problem! You can come back to the quiz anytime.\n";
-            }
+    cout << "\nEnter a topic number (1-5): ";
+    int choice;
+    cin >> choice;
+    if (choice < 1 || choice > 5) {
+        cout << "That topic number is not available. Please choose from 1 to 5.\n";
+        continue;
+    }
+
+    string selectedTopic = gradeTopics[grade - 1][choice - 1];
+
+    if (action == 1) {
+        explainTopic(selectedTopic);
+    } else if (action == 2) {
+        string confirm;
+        cout << "Are you ready to take a quiz on " << selectedTopic << "? (yes/no): ";
+        cin >> confirm;
+        if (confirm == "yes") {
+            runQuiz(selectedTopic, name);
+        } else {
+            cout << "No problem! You can come back to the quiz anytime.\n";
         }
     }
+}
+
+
 
     return 0;
 }

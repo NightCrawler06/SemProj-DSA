@@ -49,7 +49,7 @@ void clearCollection() {
 }
 
 int main() {
-    string gender, style, region, native, season;
+    string gender, style, region, native, season, bodyType;
     int age;
 
     cout << "Welcome to the Fashion Tips Chatbot!\n";
@@ -58,7 +58,7 @@ int main() {
     do {
         cout << "1. What is your gender (male/female)? ";
         getline(cin, gender);
-        toLower(gender);
+        gender = toLower(gender);
         if (!isAlphabetic(gender) || (gender != "male" && gender != "female")) {
             cout << "Please enter 'male' or 'female'.\n";
         }
@@ -79,13 +79,15 @@ int main() {
     }
 
     do {
-        cout << "3. What is your preferred style (casual, formal, streetwear)? ";
+        cout << "3. What is your preferred style (casual, formal, streetwear, minimalist)? ";
         getline(cin, style);
-        toLower(style);
-        if (!isAlphabetic(style) || (style != "casual" && style != "formal" && style != "streetwear")) {
-            cout << "Please enter 'casual', 'formal', or 'streetwear'.\n";
+        style = toLower(style);
+        if (!isAlphabetic(style) || 
+            (style != "casual" && style != "formal" && style != "streetwear" && style != "minimalist")) {
+            cout << "Please enter 'casual', 'formal', 'streetwear', or 'minimalist'.\n";
         }
-    } while (!isAlphabetic(style) || (style != "casual" && style != "formal" && style != "streetwear"));
+    } while (!isAlphabetic(style) || 
+             (style != "casual" && style != "formal" && style != "streetwear" && style != "minimalist"));
 
     do {
         cout << "4. Which region or place are you from? ";
@@ -106,11 +108,20 @@ int main() {
     do {
         cout << "6. What season or event are you preparing for? (summer, winter, wedding): ";
         getline(cin, season);
-        toLower(season);
+        season = toLower(season);
         if (!isAlphabetic(season) || (season != "summer" && season != "winter" && season != "wedding")) {
             cout << "Please enter 'summer', 'winter', or 'wedding'.\n";
         }
     } while (!isAlphabetic(season) || (season != "summer" && season != "winter" && season != "wedding"));
+
+    do {
+        cout << "7. How would you describe your body type (chubby, skinny, normal)? ";
+        getline(cin, bodyType);
+        bodyType = toLower(bodyType);
+        if (bodyType != "chubby" && bodyType != "skinny" && bodyType != "normal") {
+            cout << "Please enter 'chubby', 'skinny', or 'normal'.\n";
+        }
+    } while (bodyType != "chubby" && bodyType != "skinny" && bodyType != "normal");
 
     cout << "\nFashion Suggestion:\n";
     cout << "--------------------------------------------------\n";
@@ -121,87 +132,71 @@ int main() {
         cout << " and is a native of the area";
     }
 
-    cout << ", preparing for " << season << ", here's our recommendation:\n\n";
+    cout << ", with a " << bodyType << " body type, preparing for " << season << ", here's our recommendation:\n\n";
 
-    string seasonLower = toLower(season);
-    if (seasonLower == "winter" || seasonLower == "cold") {
+    if (style == "minimalist") {
+        cout << "- Stick to neutral tones: white, black, beige, and gray.\n";
+        cout << "- Try these combos: white + beige, black + gray, olive + cream.\n";
+        cout << "- Choose clean cuts, simple lines, and no prints.\n";
+    }
+
+    if (season == "winter") {
         cout << "- Wear layered clothing: thick jackets, hoodies, or coats.\n";
         cout << "- Choose warm tones: navy, maroon, dark green.\n";
         cout << "- Accessories like scarves and boots are recommended.\n";
-    } else if (seasonLower == "summer") {
+    } else if (season == "summer") {
         cout << "- Opt for lightweight fabrics like cotton or linen.\n";
         cout << "- Use light colors: white, pastel blue, beige.\n";
         cout << "- Sneakers or sandals are perfect.\n";
-    } else if (seasonLower == "wedding" || seasonLower == "formal event") {
+    } else if (season == "wedding") {
         cout << "- Choose formal wear: dresses or suits.\n";
         cout << "- Elegant tones like black, navy, or cream work well.\n";
         cout << "- Add minimal accessories to match the theme.\n";
-    } else {
-        cout << "- Stick to your personal style with thoughtful layering.\n";
-        cout << "- Try color combinations like olive + white or black + denim.\n";
-        cout << "- Wear what makes you confident and comfortable.\n";
     }
 
     cout << "--------------------------------------------------\n";
 
-    string menuChoice;
-    do {
-        cout << "\nWhat would you like to do next?\n";
-        cout << "1. Save this suggestion to your collection\n";
-        cout << "2. View saved collection\n";
-        cout << "3. Clear saved collection\n";
-        cout << "4. Exit\n";
-        cout << "Enter your choice (1-4): ";
-        getline(cin, menuChoice);
+    string userCommand;
+    while (true) {
+        cout << "\nHow can I assist you next? (e.g., 'I want to save this attire', 'show my collection', 'clear collection', 'exit')\n> ";
+        getline(cin, userCommand);
+        string lowerCommand = toLower(userCommand);
 
-        if (menuChoice == "1") {
+        if (lowerCommand.find("save") != string::npos) {
             ofstream outFile("collection.txt", ios::app);
-            if (outFile.is_open()) {
-                outFile << "--------------------------------------------------\n";
-                outFile << "Fashion Suggestion:\n";
-                outFile << "For a " << age << "-year-old " << gender << " from " << region
-                        << " who prefers a " << style << " style";
-                if (toLower(native) == "yes") {
-                    outFile << " and is a native of the area";
-                }
-                outFile << ", preparing for " << season << ":\n";
-
-                if (seasonLower == "winter" || seasonLower == "cold") {
-                    outFile << "- Layered clothing: thick jackets, hoodies, or coats.\n";
-                    outFile << "- Warm tones: navy, maroon, dark green.\n";
-                    outFile << "- Accessories like scarves and boots.\n";
-                } else if (seasonLower == "summer") {
-                    outFile << "- Lightweight fabrics like cotton or linen.\n";
-                    outFile << "- Light colors: white, pastel blue, beige.\n";
-                    outFile << "- Sneakers or sandals.\n";
-                } else if (seasonLower == "wedding" || seasonLower == "formal event") {
-                    outFile << "- Formal wear: dresses or suits.\n";
-                    outFile << "- Elegant tones: black, navy, cream.\n";
-                    outFile << "- Minimal accessories.\n";
-                } else {
-                    outFile << "- Personal style with thoughtful layering.\n";
-                    outFile << "- Colors like olive + white or black + denim.\n";
-                    outFile << "- Confidence and comfort first.\n";
-                }
-
-                outFile << "--------------------------------------------------\n\n";
-                outFile.close();
-                cout << "Fashion suggestion added to your collection.\n";
-            } else {
-                cout << "Error saving the suggestion.\n";
+            outFile << "Fashion Suggestion:\n";
+            outFile << "For a " << age << "-year-old " << gender << " from " << region
+                    << " with a " << bodyType << " body type, who prefers a " << style
+                    << " style preparing for " << season << ":\n";
+            if (style == "minimalist") {
+                outFile << "- Neutral tones: white, black, beige, and gray.\n";
+                outFile << "- Combos: white + beige, black + gray, olive + cream.\n";
+                outFile << "- Clean cuts, no prints.\n";
             }
-
-        } else if (menuChoice == "2") {
+            if (season == "winter") {
+                outFile << "- Layered clothing: jackets, coats.\n";
+                outFile << "- Warm tones: navy, maroon.\n";
+            } else if (season == "summer") {
+                outFile << "- Lightweight fabrics: cotton, linen.\n";
+                outFile << "- Light colors: white, beige.\n";
+            } else if (season == "wedding") {
+                outFile << "- Formal wear: dresses or suits.\n";
+                outFile << "- Elegant colors: black, cream.\n";
+            }
+            outFile << "--------------------------------------------------\n\n";
+            outFile.close();
+            cout << "Fashion suggestion added to your collection.\n";
+        } else if (lowerCommand.find("show") != string::npos || lowerCommand.find("view") != string::npos) {
             showCollection();
-        } else if (menuChoice == "3") {
+        } else if (lowerCommand.find("clear") != string::npos) {
             clearCollection();
-        } else if (menuChoice == "4") {
+        } else if (lowerCommand.find("exit") != string::npos || lowerCommand.find("quit") != string::npos) {
             cout << "Goodbye!\n";
+            break;
         } else {
-            cout << "Invalid choice. Please enter 1-4.\n";
+            cout << "Sorry, I didn't understand that. Try something like 'save this', 'show my collection', or 'exit'.\n";
         }
-
-    } while (menuChoice != "4");
+    }
 
     return 0;
 }
