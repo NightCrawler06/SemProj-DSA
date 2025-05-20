@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <stack>
+
+
 using namespace std;
 
 
@@ -19,10 +23,10 @@ struct Customer {
     string applicationDate; 
 };
 
-
+stack<Customer> paidLoanUndoStack;
+queue<Customer> pendingLoanApplications;
 vector<Customer> customerRecords;
 double companyFundsAvailable = 10000000.0; 
-vector<Customer> pendingLoanApplications;
 
 
 string addMonthsToDate(string dateStr, int monthsToAdd, int day = 15) {
@@ -82,7 +86,7 @@ void generateCustomerReceipt(const Customer& customer,
     double totalRepayment,
     double monthlyPayment) {
 
-    // gamitin ung name ng user para gawing filename
+
     string fileName = customer.customerName;
     replace(fileName.begin(), fileName.end(), ' ', '_');
     fileName += ".txt";
@@ -315,7 +319,7 @@ void applyNewLoan() {
     getline(cin, confirmationResponse);
 
     if (confirmationResponse == "Y" || confirmationResponse == "y") {
-        pendingLoanApplications.push_back(newCustomer);
+        pendingLoanApplications.push(newCustomer);
         cout << "Thank you! Your loan application has been submitted for review.\n";
     } else {
         cout << "No problem - your loan application has been canceled.\n";
@@ -329,24 +333,9 @@ void reviewPendingApplications() {
         return;
     }
 
-    cout << "\nPending Loan Applications:\n";
-    for (size_t i = 0; i < pendingLoanApplications.size(); ++i) {
-        cout << "[" << i + 1 << "] " << pendingLoanApplications[i].customerName
-             << " - PHP " << fixed << setprecision(2)
-             << pendingLoanApplications[i].loanAmount << "\n";
-    }
+    Customer selected = pendingLoanApplications.front(); 
+    pendingLoanApplications.pop(); 
 
-    cout << "\nEnter the number of the application to review (0 to cancel): ";
-    int choice;
-    cin >> choice;
-    cin.ignore();
-
-    if (choice == 0 || choice > pendingLoanApplications.size()) {
-        cout << "Canceled.\n";
-        return;
-    }
-
-    Customer& selected = pendingLoanApplications[choice - 1];
     showLoanSummary(selected);
 
     cout << "Approve this loan? (Y/N): ";
@@ -371,9 +360,8 @@ void reviewPendingApplications() {
     } else {
         cout << "Loan was declined.\n";
     }
-
-    pendingLoanApplications.erase(pendingLoanApplications.begin() + (choice - 1));
 }
+
 
 
 void showPaidLoans() {
@@ -446,6 +434,9 @@ void markLoanAsPaid() {
         return;
     }
     int loanIndexToMark = unpaidLoanIndexMap[selectedLoanNumber - 1];
+
+    paidLoanUndoStack.push(customerRecords[loanIndexToMark]);
+
     customerRecords[loanIndexToMark].isLoanPaid = true;
     saveLoansToFile();
 
@@ -453,10 +444,34 @@ void markLoanAsPaid() {
     cout << "Loan has been marked as paid.\n";
 }
 
-void functionForAnswering(const string& command) {
-    string cmd = convertToLowercase(command);
 
-    if (cmd.find("most loan") != string::npos || cmd.find("highest loan") != string::npos) {
+void undoLastPaidLoan() {
+    if (paidLoanUndoStack.empty()) {
+        cout << "No undoable actions available.\n";
+        return;
+    }
+
+    Customer last = paidLoanUndoStack.top();
+    paidLoanUndoStack.pop();
+
+    for (Customer& c : customerRecords) {
+        if (c.customerName == last.customerName && c.isLoanPaid) {
+            c.isLoanPaid = false;
+            saveLoansToFile();
+            cout << "Undo successful: Loan for " << c.customerName << " marked as unpaid.\n";
+            return;
+        }
+    }
+
+    cout << "Could not undo the last action.\n";
+}
+
+
+
+void functionForAnswering(const string& command) {
+    string lowercaseCommand = convertToLowercase(command);
+
+    if (lowercaseCommand.find("most loan") != string::npos || lowercaseCommand.find("highest loan") != string::npos) {
         if (customerRecords.empty()) {
             cout << "No loan records available.\n";
             return;
@@ -468,7 +483,7 @@ void functionForAnswering(const string& command) {
         cout << "Customer with the highest loan is: " << it->customerName 
              << " - PHP " << fixed << setprecision(2) << it->loanAmount << "\n";
 
-    } else if (cmd.find("least loan") != string::npos || cmd.find("smallest loan") != string::npos) {
+    } else if (lowercaseCommand.find("least loan") != string::npos || lowercaseCommand.find("smallest loan") != string::npos) {
         if (customerRecords.empty()) {
             cout << "No loan records available.\n";
             return;
@@ -480,7 +495,7 @@ void functionForAnswering(const string& command) {
         cout << "Customer with the smallest loan is: " << it->customerName 
              << " - PHP " << fixed << setprecision(2) << it->loanAmount << "\n";
 
-    } else if (cmd.find("collateral") != string::npos) {
+    } else if (lowercaseCommand.find("collateral") != string::npos) {
         string keyword;
         cout << "Enter the keyword to search in collateral (e.g. house, car): ";
         getline(cin, keyword);
@@ -497,7 +512,7 @@ void functionForAnswering(const string& command) {
             cout << "No customers found with collateral related to '" << keyword << "'.\n";
         }
 
-    } else if (cmd.find("doesn't pay") != string::npos || cmd.find("hasn't paid") != string::npos || cmd.find("not paid") != string::npos) {
+    } else if (lowercaseCommand.find("doesn't pay") != string::npos || lowercaseCommand.find("hasn't paid") != string::npos || lowercaseCommand.find("not paid") != string::npos) {
         bool found = false;
         for (const Customer& c : customerRecords) {
             if (!c.isLoanPaid) {
@@ -522,7 +537,7 @@ int main() {
     cout << "Type 'help' to see what I can do!\n";
 
     while (true) {
-        cout << "\nWhat would you like to do? > ";
+        cout << "\n[LoanMate]> ";
         getline(cin, userCommand);
         string lowercaseCommand = convertToLowercase(userCommand);
 
@@ -534,6 +549,8 @@ int main() {
             showUnpaidLoans();
         } else if (lowercaseCommand.find("mark") != string::npos) {
             markLoanAsPaid();
+        } else if (lowercaseCommand.find("undo") != string::npos) {
+            undoLastPaidLoan();
         } else if (lowercaseCommand.find("help") != string::npos) {
             showHelpMenu();
         }else if (lowercaseCommand.find("who") != string::npos || lowercaseCommand.find("has") != string::npos || lowercaseCommand.find("collateral") != string::npos) {
@@ -560,4 +577,3 @@ int main() {
 
     return 0;
 }
- 

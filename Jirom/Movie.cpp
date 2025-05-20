@@ -4,6 +4,8 @@
 #include <fstream>
 #include <cctype>
 #include <map>
+#include <queue>
+#include <stack>
 
 using namespace std;
 
@@ -126,6 +128,8 @@ vector<Movie> watchLater;
 vector<Movie> currentlyWatching;
 vector<Movie> customMovies;
 vector<pair<Movie, float>> userRatedMovies;
+queue<Movie> playbackQueue;
+stack<Movie> likedUndoStack;
 
 
 map<string, vector<Movie>> userCollections;
@@ -234,6 +238,9 @@ void recommendMovie(const string& genreName) {
 
                     likedMovies.push_back(m);
                     cout << "Added to your liked movies.\n";
+                    likedMovies.push_back(m);
+                    likedUndoStack.push(m);
+
                     saveData();
                 }
                 cout << "Would you like to rate this movie yourself? (y/n): ";
@@ -498,6 +505,61 @@ void showUserWorstRatings() {
     }
 }
 
+void addToPlaybackQueue(const string& title) {
+    vector<Movie>* allGenres[] = {&actionMovies, &dramaMovies, &comedyMovies, &horrorMovies, &sciFiMovies, &kidsMovies, &customMovies};
+    for (auto* genre : allGenres) {
+        for (const Movie& m : *genre) {
+            if (toLower(m.title) == toLower(title)) {
+                playbackQueue.push(m);
+                chatbotSay("Added \"" + m.title + "\" to your playback queue.");
+                return;
+            }
+        }
+    }
+    chatbotSay("Sorry, couldn't find that movie.");
+}
+
+void showPlaybackQueue() {
+    if (playbackQueue.empty()) {
+        chatbotSay("Your playback queue is empty.");
+        return;
+    }
+
+    chatbotSay("Here are the movies in your playback queue:");
+    std::queue<Movie> temp = playbackQueue;
+    while (!temp.empty()) {
+        displayMovie(temp.front());
+        cout << "--------------------------\n";
+        temp.pop();
+    }
+}
+
+
+void undoLastLike() {
+    if (likedUndoStack.empty()) {
+        chatbotSay("Nothing to undo.");
+        return;
+    }
+
+    Movie last = likedUndoStack.top();
+    likedUndoStack.pop();
+
+
+    auto it = remove_if(likedMovies.begin(), likedMovies.end(), [&](const Movie& m) {
+        return toLower(m.title) == toLower(last.title);
+    });
+
+    if (it != likedMovies.end()) {
+        likedMovies.erase(it, likedMovies.end());
+        chatbotSay("Undo successful: \"" + last.title + "\" was removed from liked movies.");
+        saveData();
+    } else {
+        chatbotSay("Movie was not found in liked movies.");
+    }
+}
+
+
+
 
 int main() {
     chatbotSay("Hey there! I'm Movibot, your movie buddy.");
@@ -638,6 +700,14 @@ int main() {
             showUserBestRatings();
         } else if (input.find("my worst ratings") != string::npos || input.find("my low ratings") != string::npos) {
             showUserWorstRatings();
+        } else if (input.find("add to queue") != string::npos) {
+            string title = input.substr(input.find("add to queue") + 12);
+            trim(title);
+            addToPlaybackQueue(title);
+        }else if (input.find("show queue") != string::npos) {
+            showPlaybackQueue();
+        }else if (input == "undo like" || input == "undo liked") {
+            undoLastLike();
         } else if (!matched && (
             input.find("recommend") != string::npos ||
             input.find("suggest") != string::npos ||
@@ -671,6 +741,9 @@ int main() {
             cout << "- my top ratings                          : Show your top 3 rated movies\n";
             cout << "- my worst ratings                        : Show your lowest 3 rated movies\n";
             cout << "- add custom movie                        : Create and save your own movie\n";
+            cout << "- undo like                               : Undo the last movie you liked\n";
+            cout << "- add to queue [title]                    : Add a movie to your playback queue\n";
+            cout << "- show queue                              : View the movies in your playback queue\n";
             cout << "- exit                                    : Save your progress and leave the chatbot\n";
         } else {
             chatbotSay("Oops! I didn't quite catch that.");
