@@ -63,6 +63,10 @@ void saveLoansToFile() {
 void loadLoansFromFile() {
     ifstream inFile("savedLoans.txt");
     Customer loadedCustomer;
+
+    customerRecords.clear();  // clear any existing loaded data
+    companyFundsAvailable = 10000000.0; // reset base funds
+
     while (getline(inFile, loadedCustomer.customerName)) {
         inFile >> loadedCustomer.loanAmount;
         inFile >> loadedCustomer.interestRate;
@@ -76,9 +80,22 @@ void loadLoansFromFile() {
 
         customerRecords.push_back(loadedCustomer);
 
+        // Subtract approved (unpaid) loans only
+        if (!loadedCustomer.isLoanPaid) {
+            companyFundsAvailable -= loadedCustomer.loanAmount;
+        }
     }
+
     inFile.close();
+
+    // Protect against invalid loan data
+    if (companyFundsAvailable < 0) {
+        cout << "Warning: Loan amounts exceeded available funds. Setting balance to zero.\n";
+        companyFundsAvailable = 0;
+    }
 }
+
+
 
 
 void generateCustomerReceipt(const Customer& customer,
@@ -167,15 +184,30 @@ string convertToLowercase(string inputText) {
 
 
 void showHelpMenu() {
-    cout << "\nHere are the available commands:\n";
-    cout << "  new         - Start a new loan application\n";
-    cout << "  view paid   - Show all fully paid loans\n";
-    cout << "  view active - Show all active (unpaid) loans\n";
-    cout << "  mark paid   - Mark a specific loan as paid\n";
-    cout << "  help        - Show this help message again\n";
-    cout << "  review      - Review and approve/decline pending applications\n";
-    cout << "  exit        - Exit the chatbot\n";
+    cout << "\n========== LOANMATE COMMAND LIST ==========\n";
+    
+    cout << "\n-- Loan Application Commands --\n";
+    cout << "  new             - Begin a new loan application\n";
+    cout << "  review          - Approve or decline pending applications\n";
+
+    cout << "\n-- Loan Status & Actions --\n";
+    cout << "  view paid       - List all paid loans\n";
+    cout << "  view active     - List all unpaid loans\n";
+    cout << "  mark paid       - Mark a loan as fully paid\n";
+    cout << "  undo            - Undo the last loan marked as paid\n";
+
+    cout << "\n-- Info & Queries --\n";
+    cout << "  help            - Show this help menu\n";
+    cout << "  exit            - Save and quit the program\n";
+    cout << "\n-- You can also ask questions like --\n";
+    cout << "  > Who owes money?\n";
+    cout << "  > What's the highest loan?\n";
+    cout << "  > Show loans with 'vehicle' as collateral\n";
+    cout << "  > Company funds status\n";
+
+    cout << "\n===========================================\n";
 }
+
 
 
 
@@ -295,6 +327,12 @@ void applyNewLoan() {
 
     cout << "\nTo help secure your loan, can you describe the item you're offering as collateral?\n";
     getline(cin, newCustomer.collateralItemDescription);
+    if (newCustomer.collateralItemDescription.empty()) {
+        cout << "Collateral description cannot be empty.\n";
+        return;
+    }
+
+
 
     cout << "What's the estimated value of that item? (PHP): ";
     cin >> newCustomer.collateralValue;
@@ -307,6 +345,12 @@ void applyNewLoan() {
 
     cout << "\nAlmost done! When are you applying for this loan? (Use format YYYY-MM-DD): ";
     getline(cin, newCustomer.applicationDate);
+
+    if (newCustomer.applicationDate.size() != 10 || newCustomer.applicationDate[4] != '-' || newCustomer.applicationDate[7] != '-') {
+        cout << "Invalid date format. Please use YYYY-MM-DD.\n";
+        return;
+    }
+
 
     newCustomer.interestRate = (newCustomer.loanAmount > 50000) ? 3.0 : 5.0;
     newCustomer.isLoanPaid = false;
@@ -333,34 +377,43 @@ void reviewPendingApplications() {
         return;
     }
 
-    Customer selected = pendingLoanApplications.front(); 
-    pendingLoanApplications.pop(); 
+    int totalApplications = pendingLoanApplications.size();
+    int currentIndex = 1;
 
-    showLoanSummary(selected);
+    while (!pendingLoanApplications.empty()) {
+        Customer selected = pendingLoanApplications.front();
+        pendingLoanApplications.pop();
 
-    cout << "Approve this loan? (Y/N): ";
-    string decision;
-    getline(cin, decision);
+        cout << "\nReviewing application " << currentIndex << " of " << totalApplications << ":\n";
+        showLoanSummary(selected);
 
-    if (decision == "Y" || decision == "y") {
-        if (selected.loanAmount > companyFundsAvailable) {
-            cout << "Insufficient funds. Cannot approve this loan.\n";
+        cout << "Approve this loan? (Y/N): ";
+        string decision;
+        getline(cin, decision);
+
+        if (decision == "Y" || decision == "y") {
+            if (selected.loanAmount > companyFundsAvailable) {
+                cout << "Insufficient funds. Cannot approve this loan.\n";
+            } else {
+                customerRecords.push_back(selected);
+                companyFundsAvailable -= selected.loanAmount;
+                saveLoansToFile();
+
+                double totalInterest = selected.loanAmount * selected.interestRate / 100;
+                double totalRepayment = selected.loanAmount + totalInterest;
+                double monthlyPayment = totalRepayment / selected.repaymentMonths;
+
+                generateCustomerReceipt(selected, totalInterest, totalRepayment, monthlyPayment);
+                cout << "Loan approved and recorded.\n";
+            }
         } else {
-            customerRecords.push_back(selected);
-            companyFundsAvailable -= selected.loanAmount;
-            saveLoansToFile();
-
-            double totalInterest = selected.loanAmount * selected.interestRate / 100;
-            double totalRepayment = selected.loanAmount + totalInterest;
-            double monthlyPayment = totalRepayment / selected.repaymentMonths;
-
-            generateCustomerReceipt(selected, totalInterest, totalRepayment, monthlyPayment);
-            cout << "Loan approved and recorded.\n";
+            cout << "Loan was declined.\n";
         }
-    } else {
-        cout << "Loan was declined.\n";
+
+        currentIndex++;
     }
 }
+
 
 
 
@@ -497,13 +550,28 @@ void functionForAnswering(const string& command) {
 
     } else if (lowercaseCommand.find("collateral") != string::npos) {
         string keyword;
-        cout << "Enter the keyword to search in collateral (e.g. house, car): ";
-        getline(cin, keyword);
-        keyword = convertToLowercase(keyword);
+        size_t pos = lowercaseCommand.find("with ");
+        if (pos != string::npos) {
+            keyword = lowercaseCommand.substr(pos + 5);
+            size_t quote = keyword.find("'");
+            if (quote != string::npos) {
+                keyword = keyword.substr(quote + 1);
+                keyword = keyword.substr(0, keyword.find("'"));
+            } else {
+                keyword = keyword.substr(0, keyword.find(" "));
+            }
+            keyword = convertToLowercase(keyword);
+            cout << "Searching for collateral containing: '" << keyword << "'\n";
+        } else {
+            cout << "Enter the keyword to search in collateral (e.g. house, car): ";
+            getline(cin, keyword);
+            keyword = convertToLowercase(keyword);
+        }
+
         bool found = false;
         for (const Customer& c : customerRecords) {
             if (convertToLowercase(c.collateralItemDescription).find(keyword) != string::npos) {
-                cout << "- " << c.customerName << ": " << c.collateralItemDescription << " (PHP " 
+                cout << "- " << c.customerName << ": " << c.collateralItemDescription << " (PHP "
                      << fixed << setprecision(2) << c.collateralValue << ")\n";
                 found = true;
             }
@@ -512,7 +580,12 @@ void functionForAnswering(const string& command) {
             cout << "No customers found with collateral related to '" << keyword << "'.\n";
         }
 
-    } else if (lowercaseCommand.find("doesn't pay") != string::npos || lowercaseCommand.find("hasn't paid") != string::npos || lowercaseCommand.find("not paid") != string::npos) {
+    } else if (
+        lowercaseCommand.find("doesn't pay") != string::npos || 
+        lowercaseCommand.find("hasn't paid") != string::npos || 
+        lowercaseCommand.find("not paid") != string::npos || 
+        lowercaseCommand.find("unpaid") != string::npos
+    ) {
         bool found = false;
         for (const Customer& c : customerRecords) {
             if (!c.isLoanPaid) {
@@ -524,6 +597,13 @@ void functionForAnswering(const string& command) {
             cout << "All customers have paid their loans.\n";
         }
 
+    } else if (
+        lowercaseCommand.find("company") != string::npos ||
+        (lowercaseCommand.find("balance") != string::npos ||
+         lowercaseCommand.find("funds") != string::npos ||
+         lowercaseCommand.find("money") != string::npos)
+    ) {
+        cout << "The company currently has PHP " << fixed << setprecision(2) << companyFundsAvailable << " available for lending.\n";
     } else {
         cout << "I'm not sure how to answer that. Try asking about 'most loan', 'collateral', or 'who doesn't pay'.\n";
     }
@@ -543,20 +623,30 @@ int main() {
 
         if (lowercaseCommand.find("apply") != string::npos || lowercaseCommand.find("borrow") != string::npos) {
             applyNewLoan();
-        } else if (lowercaseCommand.find("paid") != string::npos ) {
-            showPaidLoans();
         } else if (lowercaseCommand.find("active") != string::npos || lowercaseCommand.find("unpaid") != string::npos) {
             showUnpaidLoans();
         } else if (lowercaseCommand.find("mark") != string::npos) {
             markLoanAsPaid();
+        } else if (lowercaseCommand.find("paid") != string::npos ) {
+            showPaidLoans();
         } else if (lowercaseCommand.find("undo") != string::npos) {
             undoLastPaidLoan();
         } else if (lowercaseCommand.find("help") != string::npos) {
             showHelpMenu();
-        }else if (lowercaseCommand.find("who") != string::npos || lowercaseCommand.find("has") != string::npos || lowercaseCommand.find("collateral") != string::npos) {
+        } else if (
+            lowercaseCommand.find("who") != string::npos ||
+            lowercaseCommand.find("has") != string::npos ||
+            lowercaseCommand.find("collateral") != string::npos ||
+            lowercaseCommand.find("company") != string::npos ||
+            lowercaseCommand.find("money") != string::npos ||  
+            lowercaseCommand.find("funds") != string::npos ||  
+            lowercaseCommand.find("owe") != string::npos ||
+            lowercaseCommand.find("unpaid") != string::npos ||
+            lowercaseCommand.find("how much") != string::npos
+        ) {
             functionForAnswering(userCommand);
         } else if (lowercaseCommand.find("review") != string::npos) {
-            reviewPendingApplications();
+            reviewPendingApplications();    
         } else if (lowercaseCommand.find("hi") != string::npos ||
             lowercaseCommand.find("hello") != string::npos ||
             lowercaseCommand.find("hey") != string::npos ||
