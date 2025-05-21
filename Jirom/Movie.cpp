@@ -320,15 +320,36 @@ void finishWatching(const string& title) {
     auto it = find_if(currentlyWatching.begin(), currentlyWatching.end(), [&](const Movie& m) {
         return toLower(m.title) == toLower(title);
     });
+
     if (it != currentlyWatching.end()) {
         watchHistory.push_back(*it);
         currentlyWatching.erase(it);
         chatbotSay("Marked \"" + title + "\" as finished and moved to history.");
         saveData();
+
+
+        if (!playbackQueue.empty()) {
+            chatbotSay("Do you want to start the next movie in your queue? (y/n)");
+            string response;
+            getline(cin, response);
+            if (!response.empty() && tolower(response[0]) == 'y') {
+                Movie next = playbackQueue.front();
+                playbackQueue.pop();
+                currentlyWatching.push_back(next);
+                chatbotSay("Now watching from your queue:");
+                displayMovie(next);
+            } else {
+                chatbotSay("Okay, taking a break from watching.");
+            }
+        } else {
+            chatbotSay("Your queue is empty.");
+        }
+
     } else {
         chatbotSay("You're not currently watching \"" + title + "\".");
     }
 }
+
 
 
 
@@ -607,7 +628,7 @@ int main() {
             finishWatching(title);
         } else if (input.find("show currently watching") != string::npos) {
             showMovieList(currentlyWatching, "Currently Watching");
-        } else if (input.find("add custom movie") != string::npos) {
+        } else if (input.find("custom movie") != string::npos) {
             Movie m;
             cout << "Enter title: ";
             getline(cin, m.title);
@@ -665,6 +686,11 @@ int main() {
 
                 else cout << "List name should be liked, history, or later.\n";
             }
+        } else if (input.find("add to queue") != string::npos) {
+            string title = input.substr(input.find("add to queue") + 12);
+            trim(title);            addToPlaybackQueue(title);
+        } else if (input.find("show queue") != string::npos) {
+            showPlaybackQueue();
         } else if (input.find("add") != string::npos && input.find("to") != string::npos) {
             size_t addPos = input.find("add") + 3;
             size_t toPos = input.find("to");
@@ -700,13 +726,7 @@ int main() {
             showUserBestRatings();
         } else if (input.find("my worst ratings") != string::npos || input.find("my low ratings") != string::npos) {
             showUserWorstRatings();
-        } else if (input.find("add to queue") != string::npos) {
-            string title = input.substr(input.find("add to queue") + 12);
-            trim(title);
-            addToPlaybackQueue(title);
-        }else if (input.find("show queue") != string::npos) {
-            showPlaybackQueue();
-        }else if (input == "undo like" || input == "undo liked") {
+        } else if (input == "undo like" || input == "undo liked") {
             undoLastLike();
         } else if (!matched && (
             input.find("recommend") != string::npos ||
@@ -723,28 +743,29 @@ int main() {
             break;
         } else if (input == "help") {
             chatbotSay("Need a hand? Here's what I can help you with:");
-            cout << "- recommend [genre]                       : Get up to 3 movie suggestions (e.g., recommend action)\n";
-            cout << "- show liked                              : View your liked movies\n";
-            cout << "- show history                            : See what you've watched\n";
-            cout << "- show watch later                        : View your Watch Later list\n";
+            cout << "       Keywords                                  What can it do \n";
+            cout << "- recommend [genre]                         : Get up to 3 movie suggestions (e.g., recommend action)\n";
+            cout << "- show liked                                : View your liked movies\n";
+            cout << "- show history                              : See what you've watched\n";
+            cout << "- show watch later                          : View your Watch Later list\n";
             cout << "- remove [title] from [liked/history/later] : Remove a movie from a list\n";
-            cout << "- add [movie title] to [collection name]  : Add a movie to a named collection\n";
-            cout << "- show [collection name] collection       : View all movies in a collection\n";
-            cout << "- delete collection [name]                : Delete an entire collection\n";
-            cout << "- remove [title] from collection [name]   : Remove a movie from a collection\n";    
-            cout << "- suggest similar to [title]              : Find similar movies to ones you liked\n";
-            cout << "- start watching [title]                  : Mark a movie as currently watching\n";
-            cout << "- mark finished [title]                   : Mark a movie as finished and move to history\n";
-            cout << "- show currently watching                 : View all movies you're currently watching\n";
-            cout << "- best movie                              : Show the highest-rated movie you've liked or watched\n";
-            cout << "- worst rated / low rated                 : Show the lowest-rated movies from the system\n";
-            cout << "- my top ratings                          : Show your top 3 rated movies\n";
-            cout << "- my worst ratings                        : Show your lowest 3 rated movies\n";
-            cout << "- add custom movie                        : Create and save your own movie\n";
-            cout << "- undo like                               : Undo the last movie you liked\n";
-            cout << "- add to queue [title]                    : Add a movie to your playback queue\n";
-            cout << "- show queue                              : View the movies in your playback queue\n";
-            cout << "- exit                                    : Save your progress and leave the chatbot\n";
+            cout << "- add [movie title] to [collection name]    : Add a movie to a named collection\n";
+            cout << "- show [collection name] collection         : View all movies in a collection\n";
+            cout << "- delete collection [name]                  : Delete an entire collection\n";
+            cout << "- remove [title] from collection [name]     : Remove a movie from a collection\n";    
+            cout << "- suggest similar to [title]                : Find similar movies to ones you liked\n";
+            cout << "- start watching [title]                    : Mark a movie as currently watching\n";
+            cout << "- mark finished [title]                     : Mark a movie as finished and move to history\n";
+            cout << "- show currently watching                   : View all movies you're currently watching\n";
+            cout << "- best movie                                : Show the highest-rated movie you've liked or watched\n";
+            cout << "- worst rated / low rated                   : Show the lowest-rated movies from the system\n";
+            cout << "- my top ratings                            : Show your top 3 rated movies\n";
+            cout << "- my worst ratings                          : Show your lowest 3 rated movies\n";
+            cout << "- custom movie                              : Create and save your own movie\n";
+            cout << "- undo like                                 : Undo the last movie you liked\n";
+            cout << "- add to queue [title]                      : Add a movie to your playback queue\n";
+            cout << "- show queue                                : View the movies in your playback queue\n";
+            cout << "- exit                                      : Save your progress and leave the chatbot\n";
         } else {
             chatbotSay("Oops! I didn't quite catch that.");
             chatbotSay("Try something like: 'recommend action', or type 'help' if you're lost.");

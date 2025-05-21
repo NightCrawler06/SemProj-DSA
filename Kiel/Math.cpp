@@ -5,6 +5,8 @@
 #include <stack>
 #include <queue>
 #include <set>
+#include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -183,6 +185,33 @@ int generateQuestion(string topic, string &question) {
     return answer;
 }
 
+void practiceTopic(string selectedTopic) {
+    cout << "\nNow let's try 5 practice questions for the topic: " << selectedTopic << "\n";
+    int score = 0;
+    string question, userAnswer;
+    int correctAnswer;
+
+    for (int i = 1; i <= 5; i++) {
+        correctAnswer = generateQuestion(selectedTopic, question);
+        cout << "\nPractice Question " << i << ":\n" << question << "\nYour answer: ";
+        cin >> userAnswer;
+
+        if (userAnswer == to_string(correctAnswer)) {
+            cout << "Correct!\n";
+            score++;
+        } else {
+            cout << "Not quite. The correct answer was: " << correctAnswer << "\n";
+        }
+    }
+
+    cout << "\nYou answered " << score << " out of 5 questions correctly.\n";
+    if (score >= 3) {
+        cout << "Great! You've passed the review session.\n";
+    } else {
+        cout << "Oops, you didn't pass. Keep practicing!\n";
+    }
+}
+
 
 void runQuiz(string selectedTopic, string name) {
     int score = 0;
@@ -258,78 +287,70 @@ void runQuiz(string selectedTopic, string name) {
 
 }
 
+string toLowerCase(string str) {
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
+}
+
 
 int main() {
     srand(time(0));
-    int grade, choice;
-    string name;
+    int grade;
+    string name, userInput;
 
-    cout << "\nWelcome to your personal Math Tutor Bot!\n";
-    cout << "I'm here to help you review math topics and practice with quizzes.\n";
-    cout << "Before we begin, what's your name? ";
-    cin >> name;
+    cout << "\nWelcome! I'm your friendly MathTutorBot.\n";
+    cout << "What's your name? ";
+    getline(cin, name);
 
-    cout << "\nHi " << name << "! What grade are you in? (1-6): ";
+    cout << "Nice to meet you, " << name << "! What grade are you in? (1-6): ";
     cin >> grade;
+    cin.ignore();
 
     if (grade < 1 || grade > 6) {
-        cout << "That doesn't seem like a valid grade. Please restart and enter 1 to 6.\n";
+        cout << "Oops! I only support grades 1 to 6 right now.\n";
         return 0;
     }
 
+    cout << "\nGreat! Ask me to *explain* or *quiz* you on any of these topics:\n";
+    for (const string& topic : gradeTopics[grade - 1]) {
+        cout << "- " << topic << "\n";
+    }
+
     while (true) {
+        cout << "\n[MathTutor]> ";
+        getline(cin, userInput);
+        string lower = toLowerCase(userInput);
 
-    printLine();
-    cout << "\nTopics for Grade " << grade << ":\n";
-    for (int i = 0; i < 5; i++) {
-        cout << i + 1 << ". " << gradeTopics[grade - 1][i] << "\n";
-    }
-    printLine();
+        if (lower == "exit" || lower == "quit") {
+            cout << "\nThanks for learning with me, " << name << "! See you next time. 👋\n";
+            break;
+        }
 
+        bool matched = false;
+        for (string topic : gradeTopics[grade - 1]) {
+            string topicLower = toLowerCase(topic);
+            if (lower.find(topicLower) != string::npos) {
+                if (lower.find("quiz") != string::npos) {
+                    runQuiz(topic, name);
+                } else if (lower.find("explain") != string::npos || lower.find("what is") != string::npos) {
+                    explainTopic(topic);
+                    practiceTopic(topic);
+                } else {
+                    cout << "Would you like to review or take a quiz on " << topic << "? Type 'explain " << topicLower << "' or 'quiz " << topicLower << "'.\n";
+                }
+                matched = true;
+                break;
+            }
+        }
 
-    cout << "\nWhat would you like to do, " << name << "?\n";
-    cout << "1. Review a topic\n";
-    cout << "2. Take a quiz\n";
-    cout << "3. Exit\n";
-    cout << "Enter your choice (1-3): ";
-    int action;
-    cin >> action;
-
-    if (action == 3) {
-        cout << "\nThanks for learning with me today, " << name << "!\nKeep practicing and see you next time!\n";
-        break;
-    }
-
-    if (action != 1 && action != 2) {
-        cout << "Invalid option. Please choose 1, 2, or 3.\n";
-        continue;
-    }
-
-    cout << "\nEnter a topic number (1-5): ";
-    int choice;
-    cin >> choice;
-    if (choice < 1 || choice > 5) {
-        cout << "That topic number is not available. Please choose from 1 to 5.\n";
-        continue;
-    }
-
-    string selectedTopic = gradeTopics[grade - 1][choice - 1];
-
-    if (action == 1) {
-        explainTopic(selectedTopic);
-    } else if (action == 2) {
-        string confirm;
-        cout << "Are you ready to take a quiz on " << selectedTopic << "? (yes/no): ";
-        cin >> confirm;
-        if (confirm == "yes") {
-            runQuiz(selectedTopic, name);
-        } else {
-            cout << "No problem! You can come back to the quiz anytime.\n";
+        if (!matched) {
+            cout << "Sorry, I didn't catch that. Try asking something like:\n";
+            cout << "  - 'quiz me on multiplication'\n";
+            cout << "  - 'explain fractions'\n";
+            cout << "  - or type 'exit' to leave.\n";
         }
     }
-}
-
-
 
     return 0;
 }
+
