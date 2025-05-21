@@ -84,13 +84,7 @@ void explainTopic(string topic) {
     printLine();
 }
 
-string giveHint(string topic) {
-    if (topic == "Addition") return "Hint: Try using your fingers or a number line.";
-    if (topic == "Subtraction") return "Hint: Think about what's left after taking away.";
-    if (topic == "Multiplication") return "Hint: Try repeated addition.";
-    if (topic == "Division") return "Hint: Think of equal sharing.";
-    return "Hint: Think it through step by step.";
-}
+string correctAnswerStr = "";
 
 int generateQuestion(string topic, string &question) {
     int a = rand() % 10 + 1;
@@ -117,8 +111,27 @@ int generateQuestion(string topic, string &question) {
         answer = a + 1;
         question = "What number comes after " + to_string(a) + "?";
     } else if (topic == "Fractions") {
-        answer = 1;
-        question = "What is 1/2 + 1/2?";
+        int numerator1 = rand() % 3 + 1;
+        int denominator1 = rand() % 4 + 2;
+        int numerator2 = rand() % 3 + 1;
+        int denominator2 = denominator1;
+
+        int totalNumerator = numerator1 + numerator2;
+        int whole = totalNumerator / denominator1;
+        int remainder = totalNumerator % denominator1;
+
+        if (whole > 0 && remainder > 0) {
+            correctAnswerStr = to_string(whole) + " " + to_string(remainder) + "/" + to_string(denominator1);
+        } else if (whole > 0) {
+            correctAnswerStr = to_string(whole);
+        } else {
+            correctAnswerStr = to_string(totalNumerator) + "/" + to_string(denominator1);
+        }
+
+        question = "What is " + to_string(numerator1) + "/" + to_string(denominator1) +
+                " + " + to_string(numerator2) + "/" + to_string(denominator2) +
+                "? (Answer as a simplified fraction or mixed number)";
+        answer = -1;
     } else if (topic == "Place Value") {
         int number = (rand() % 9 + 1) * 100 + rand() % 100;
         answer = (number / 100) * 100;
@@ -140,8 +153,51 @@ int generateQuestion(string topic, string &question) {
         answer = cm * 10;
         question = "A pencil is " + to_string(cm) + " cm long. How many millimeters is that?";
     } else if (topic == "Geometry") {
-        answer = 3;
-        question = "How many sides does a triangle have?";
+        int type = rand() % 4;
+        string shape;
+        switch (type) {
+            case 0:
+                {
+                    string shapes[] = {"triangle", "square", "pentagon", "hexagon"};
+                    int sides[] = {3, 4, 5, 6};
+                    int index = rand() % 4;
+                    shape = shapes[index];
+                    answer = sides[index];
+                    question = "How many sides does a " + shape + " have?";
+                    break;
+                }
+            case 1:
+                {
+                    string shapes[] = {"square", "rectangle", "equilateral triangle", "hexagon"};
+                    int angles[] = {90, 90, 60, 120};
+                    int index = rand() % 4;
+                    shape = shapes[index];
+                    answer = angles[index];
+                    question = "What is a typical angle (in degrees) in a " + shape + "?";
+                    break;
+                }
+            case 2:
+                {
+                    string shapes[] = {"triangle", "square", "circle"};
+                    int angles[] = {3, 4, 0};  
+                    int index = rand() % 3;
+                    shape = shapes[index];
+                    answer = angles[index];
+                    question = "How many corners or angles does a " + shape + " have?";
+                    break;
+                }
+            case 3:
+                {
+                    string shapes[] = {"circle", "triangle", "cube", "sphere"};
+                    bool is3D[] = {false, false, true, true};
+                    int index = rand() % 4;
+                    shape = shapes[index];
+                    answer = is3D[index] ? 1 : 0;
+                    question = "Is a " + shape + " a 3D shape? (1 = Yes, 0 = No)";
+                    break;
+                }
+        }
+
     } else if (topic == "Long Division") {
         int divisor = rand() % 9 + 2;
         int quotient = rand() % 10 + 1;
@@ -154,10 +210,22 @@ int generateQuestion(string topic, string &question) {
         answer = start + buy;
         question = "You have " + to_string(start) + " apples and buy " + to_string(buy) + " more. How many do you have now?";
     } else if (topic == "Ratios") {
-        int apples = rand() % 5 + 1;
-        int cost = apples * 2;
-        answer = 2;
-        question = "If " + to_string(apples) + " apples cost " + to_string(cost) + " pesos, how much does 1 apple cost?";
+        int a = rand() % 4 + 1;
+        int b = rand() % 4 + 1;
+        int total = a + b;
+        int questionType = rand() % 2;
+
+        if (questionType == 0) {
+            question = "If the ratio of boys to girls is " + to_string(a) + ":" + to_string(b) +
+                    ", what is the total number of students if there are " + to_string(a) + " boys?";
+            answer = total;
+            correctAnswerStr = "";
+        } else {
+            correctAnswerStr = to_string(a) + ":" + to_string(b);
+            question = "What is the ratio of " + to_string(a * 2) + " apples to " + to_string(b * 2) +
+                    " oranges? (Answer in form a:b)";
+            answer = -1;
+        }
     } else if (topic == "Percentages") {
         int base = (rand() % 4 + 1) * 25; 
         answer = base / 4;
@@ -192,16 +260,25 @@ void practiceTopic(string selectedTopic) {
     int correctAnswer;
 
     for (int i = 1; i <= 5; i++) {
+        correctAnswerStr = "";
+
         correctAnswer = generateQuestion(selectedTopic, question);
         cout << "\nPractice Question " << i << ":\n" << question << "\nYour answer: ";
         cin >> userAnswer;
 
-        if (userAnswer == to_string(correctAnswer)) {
+        if ((correctAnswerStr != "" && userAnswer == correctAnswerStr) ||
+            (correctAnswerStr == "" && userAnswer == to_string(correctAnswer))) {
             cout << "Correct!\n";
             score++;
         } else {
-            cout << "Not quite. The correct answer was: " << correctAnswer << "\n";
+            cout << "Not quite. The correct answer was: ";
+            if (correctAnswerStr != "") {
+                cout << correctAnswerStr << "\n";
+            } else {
+                cout << correctAnswer << "\n";
+            }
         }
+
     }
 
     cout << "\nYou answered " << score << " out of 5 questions correctly.\n";
@@ -223,6 +300,8 @@ void runQuiz(string selectedTopic, string name) {
     int questionsAsked = 0;
 
     while (questionsAsked < 10) {
+        correctAnswerStr = "";
+
         correctAnswer = generateQuestion(selectedTopic, question);
 
 
@@ -233,14 +312,15 @@ void runQuiz(string selectedTopic, string name) {
         cout << "\nQuestion " << questionsAsked << ":\n" << question << "\nYour answer: ";
         cin >> userAnswer;
 
-        if (userAnswer == to_string(correctAnswer)) {
+        if ((correctAnswerStr != "" && userAnswer == correctAnswerStr) ||
+            (correctAnswerStr == "" && userAnswer == to_string(correctAnswer))) {
             score++;
-            continue;
         } else {
             wrongQuestions.push(question);
-            correctAnswers.push(to_string(correctAnswer));
+            correctAnswers.push(correctAnswerStr != "" ? correctAnswerStr : to_string(correctAnswer));
             userWrongAnswers.push(userAnswer);
         }
+
     }
 
         printLine();
@@ -322,7 +402,7 @@ int main() {
         string lower = toLowerCase(userInput);
 
         if (lower == "exit" || lower == "quit") {
-            cout << "\nThanks for learning with me, " << name << "! See you next time. 👋\n";
+            cout << "\nThanks for learning with me, " << name << "! See you next time.\n";
             break;
         }
 
