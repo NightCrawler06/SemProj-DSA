@@ -225,7 +225,7 @@ void recommendMovie(const string& genreName) {
 
             string seen;
             getline(cin, seen);
-            
+
 
             if (seen.find('y') != string::npos) {
                 if (!isInList(watchHistory, m)) watchHistory.push_back(m);
@@ -586,7 +586,7 @@ int main() {
     chatbotSay("Hey there! I'm Movibot, your movie buddy.");
     chatbotSay("I can help you find what to watch, save your favorites, and even track what you've seen.");
     chatbotSay("Ready to discover something fun?");
-    
+
     loadData();
 
     string input;
@@ -613,7 +613,7 @@ int main() {
         }
         if (matched) continue; 
 
-        
+
         if (input.find("suggest similar") != string::npos) {
             string title = input.substr(input.find("to") + 2);
             trim(title);
@@ -662,10 +662,18 @@ int main() {
             showMovieList(watchLater, "Watch Later");
         } else if (input.find("best movie") != string::npos || input.find("show best") != string::npos) {
             showBestMovie();
+        } else if (input.find("remove") != string::npos && input.find("from collection") != string::npos) {
+            size_t removePos = input.find("remove") + 6;
+            size_t fromPos = input.find("from collection");
+            string title = input.substr(removePos, fromPos - removePos);
+            string collection = input.substr(fromPos + 15);
+            trim(title);
+            trim(collection);
+            removeFromCollection(title, collection);
         } else if (input.find("remove") != string::npos && input.find("from") != string::npos) {
             size_t removePos = input.find("remove") + 6;
             size_t fromPos = input.find("from");
-        
+
             if (fromPos == string::npos || fromPos <= removePos) {
                 cout << "Invalid remove format. Use: remove [title] from [liked/history/later]\n";
             } else {
@@ -679,7 +687,7 @@ int main() {
                 };
                 trim(rawTitle);
                 trim(listName);
-        
+
                 if (listName == "liked") removeMovieFromList(likedMovies, rawTitle, "liked");
                 else if (listName == "history") removeMovieFromList(watchHistory, rawTitle, "history");
                 else if (listName == "later") removeMovieFromList(watchLater, rawTitle, "later");
@@ -710,14 +718,6 @@ int main() {
             string name = input.substr(input.find("delete collection") + 17);
             trim(name);
             deleteCollection(name);
-        } else if (input.find("remove") != string::npos && input.find("from collection") != string::npos) {
-            size_t removePos = input.find("remove") + 6;
-            size_t fromPos = input.find("from collection");
-            string title = input.substr(removePos, fromPos - removePos);
-            string collection = input.substr(fromPos + 15);
-            trim(title);
-            trim(collection);
-            removeFromCollection(title, collection);
         } else if (input.find("most rated") != string::npos || input.find("top rated") != string::npos) {
             showTopRatedMovies();
         } else if (input.find("low rated") != string::npos || input.find("worst rated") != string::npos) {
@@ -770,7 +770,7 @@ int main() {
             chatbotSay("Oops! I didn't quite catch that.");
             chatbotSay("Try something like: 'recommend action', or type 'help' if you're lost.");
         }
-        
+
     skip:;
     }
 
